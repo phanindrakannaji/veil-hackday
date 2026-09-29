@@ -177,9 +177,17 @@ api.post("/bind", (req, res) => {
 api.get("/pass/:tokenId/binding", (req, res) => {
   const binding = getBinding(req.params.tokenId);
   if (!binding) {
-    return res.status(404).json({ error: "not_bound" });
+    return res.json({
+      bound: false,
+      token_id: req.params.tokenId,
+      track_id: null,
+      bound_at: null,
+    });
   }
-  res.json(binding);
+  res.json({
+    bound: true,
+    ...binding,
+  });
 });
 
 // --- Policy decide ---

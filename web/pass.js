@@ -39,6 +39,11 @@ async function init() {
 }
 
 async function issueSelf() {
+  // Reset binding badge immediately before issuing new Pass
+  if (bindingBadgeEl) {
+    bindingBadgeEl.textContent = "Not linked";
+    bindingBadgeEl.className = "badge";
+  }
   const res = await fetch(`${API}/pass/issue`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -136,9 +141,16 @@ async function checkBinding() {
     const res = await fetch(`${API}/pass/${tokenId}/binding`);
     if (res.ok) {
       const binding = await res.json();
-      bindingBadgeEl.textContent = "Linked to Camera";
-      bindingBadgeEl.className = "badge allow";
+      // Check actual bound status: must have bound===true AND bound_at present
+      if (binding.bound === true && binding.bound_at) {
+        bindingBadgeEl.textContent = "Linked to Camera";
+        bindingBadgeEl.className = "badge allow";
+      } else {
+        bindingBadgeEl.textContent = "Not linked";
+        bindingBadgeEl.className = "badge";
+      }
     } else {
+      // Fallback for old 404-not-bound shape (backward compat)
       bindingBadgeEl.textContent = "Not linked";
       bindingBadgeEl.className = "badge";
     }
