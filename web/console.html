@@ -37,8 +37,10 @@
       </div>
       <div class="console-backend-row">
         <span class="console-chip chip-muted" id="rightsBackendChip" title="Media Rights Graph backend">Rights graph · …</span>
-        <span class="console-chip chip-muted" id="openRouterChip" title="OpenRouter explain">AI · OpenRouter</span>
+        <span class="console-chip chip-muted" id="crusoeChip" title="Crusoe primary explain">AI · Crusoe</span>
+        <span class="console-chip chip-muted" id="openRouterChip" title="OpenRouter fallback / judge panel">AI · OpenRouter</span>
       </div>
+      <div class="console-anomaly-strip" id="anomalyStrip" hidden aria-live="polite"></div>
       <div class="metric-strip" id="metricStrip" aria-live="polite">
         <div class="metric">
           <span class="metric-label">Passes active</span>
@@ -59,6 +61,24 @@
         <a class="btn ghost" href="/camera">Open Camera</a>
         <a class="btn ghost" href="/cue">Cue card</a>
         <button class="btn ghost console-danger-link" id="btnReset">Wipe everything…</button>
+      </div>
+      <div class="console-ai-actions">
+        <button class="btn ghost" id="btnConsentBrief" type="button">Consent brief</button>
+        <button class="btn ghost" id="btnJudgePanel" type="button">Judge panel</button>
+      </div>
+      <div class="console-explain-panel" id="consentBriefPanel" hidden>
+        <div class="console-explain-head">
+          <span class="section-label">Consent brief</span>
+          <span class="console-chip chip-muted" id="consentBriefChip">AI</span>
+        </div>
+        <p class="console-explain-text" id="consentBriefText"></p>
+      </div>
+      <div class="console-judge-panel" id="judgePanel" hidden>
+        <div class="console-explain-head">
+          <span class="section-label">Judge panel</span>
+          <span class="console-chip chip-muted">OpenRouter</span>
+        </div>
+        <div class="console-judge-cards" id="judgeCards"></div>
       </div>
       <div class="console-status" id="heroStatus" hidden></div>
     </section>
@@ -81,7 +101,7 @@
       <div class="console-explain-panel" id="explainPanel" hidden>
         <div class="console-explain-head">
           <span class="section-label">AI explain</span>
-          <span class="console-chip chip-muted" id="explainModelChip">OpenRouter</span>
+          <span class="console-chip chip-muted" id="explainModelChip">AI</span>
         </div>
         <p class="console-explain-text" id="explainText"></p>
       </div>
@@ -97,6 +117,14 @@
       </div>
       <div id="passList" class="console-people">
         <p class="muted small">No Passes yet — start a clean demo above.</p>
+      </div>
+      <div class="console-explain-panel" id="revokeImpactPanel" hidden>
+        <div class="console-explain-head">
+          <span class="section-label">Revoke impact</span>
+          <span class="console-chip chip-muted" id="revokeImpactChip">preview</span>
+        </div>
+        <p class="console-explain-text" id="revokeImpactText"></p>
+        <pre class="console-impact-graph" id="revokeImpactGraph" hidden></pre>
       </div>
     </section>
 

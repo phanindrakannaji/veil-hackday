@@ -23,13 +23,25 @@ import {
   clearClipsAndEdges,
   getRightsGraphPayload,
   getRightsGraph,
+  memoryRevokeImpact,
 } from "./rights-graph.js";
-import { isNeo4jReady, getNeo4jUri, initNeo4j } from "./neo4j.js";
+import { isNeo4jReady, getNeo4jUri, initNeo4j, queryRevokeImpact } from "./neo4j.js";
 import {
   isOpenRouterReady,
   getOpenRouterModel,
-  explainDecision,
 } from "./openrouter.js";
+import {
+  isCrusoeReady,
+  getCrusoeModel,
+} from "./crusoe.js";
+import {
+  explainDecision,
+  consentBrief,
+  revokeImpactNarrative,
+  runJudgePanel,
+  aiStatusPayload,
+} from "./ai.js";
+import { detectAnomalies } from "./anomalies.js";
 
 export const api = Router();
 
@@ -159,7 +171,7 @@ api.get("/neo4j/status", async (_req, res) => {
   });
 });
 
-// --- OpenRouter explain ---
+// --- AI status / explain / Crusoe + OpenRouter ---
 
 api.get("/openrouter/status", (_req, res) => {
   const ok = isOpenRouterReady();
@@ -170,9 +182,32 @@ api.get("/openrouter/status", (_req, res) => {
   }
 });
 
+api.get("/crusoe/status", (_req, res) => {
+  const ok = isCrusoeReady();
+  if (ok) {
+    res.json({ ok: true, model: getCrusoeModel() });
+  } else {
+    res.json({ ok: false });
+  }
+});
+
+api.get("/ai/status", async (_req, res) => {
+  if (!isNeo4jReady()) {
+    await initNeo4j();
+  }
+  const neoOk = isNeo4jReady();
+  res.json(
+    aiStatusPayload({
+      ok: neoOk,
+      uri: getNeo4jUri(),
+      backend: neoOk ? "neo4j" : "memory",
+    })
+  );
+});
+
 api.post("/ai/explain", async (req, res) => {
-  if (!isOpenRouterReady()) {
-    return res.status(503).json({ error: "OpenRouter not configured" });
+  if (!isCrusoeReady() && !isOpenRouterReady()) {
+    return res.status(503).json({ error: "No AI backend configured" });
   }
 
   const clipId = typeof req.body?.clip_id === "string" ? req.body.clip_id : undefined;
@@ -194,18 +229,133 @@ api.post("/ai/explain", async (req, res) => {
   }
 
   try {
-    const { text, model } = await explainDecision({
+    const { text, model, backend } = await explainDecision({
       clip: clip ?? null,
       receipts,
       edges,
       question: typeof req.body?.question === "string" ? req.body.question : undefined,
     });
-    res.json({ text, model, backend: "openrouter" });
+    res.json({ text, model, backend });
   } catch (err) {
     const msg = (err as Error).message || "explain_failed";
     const status = /not configured/i.test(msg) ? 503 : 502;
     res.status(status).json({ error: msg });
   }
+});
+
+api.post("/ai/consent-brief", async (_req, res) => {
+  if (!isCrusoeReady() && !isOpenRouterReady()) {
+    return res.status(503).json({ error: "No AI backend configured" });
+  }
+  const passes = listTokens()
+    .filter((t) => !t.payload.revoked)
+    .map((t) => ({
+      subject: t.payload.subject,
+      token_id: t.payload.token_id,
+      public: t.payload.treatment?.public,
+      promotional_use: !!t.payload.permissions?.promotional_use,
+    }));
+  const clips = listClips();
+  const bySubject: Record<string, number> = {};
+  for (const c of clips) {
+    bySubject[c.subject] = (bySubject[c.subject] || 0) + 1;
+  }
+  const context = {
+    active_passes: passes,
+    clip_counts_by_subject: bySubject,
+    total_clips: clips.length,
+    pending_exports: clips.filter((c) => c.export_status === "pending").length,
+  };
+  try {
+    const { text, model, backend } = await consentBrief(context);
+    res.json({ text, model, backend, context });
+  } catch (err) {
+    const msg = (err as Error).message || "consent_brief_failed";
+    const status = /not configured/i.test(msg) ? 503 : 502;
+    res.status(status).json({ error: msg });
+  }
+});
+
+api.post("/ai/revoke-impact", async (req, res) => {
+  const tokenId =
+    typeof req.body?.token_id === "string" ? req.body.token_id.trim() : "";
+  if (!tokenId) {
+    return res.status(400).json({ error: "token_id required" });
+  }
+
+  let graph = await queryRevokeImpact(tokenId);
+  if (!graph) {
+    graph = memoryRevokeImpact(tokenId);
+  }
+  // Enrich subject from credentials if Neo4j missed it
+  if (!graph.subject) {
+    const t = getToken(tokenId);
+    if (t) {
+      graph = { ...graph, subject: t.payload.subject, pass_found: true };
+    }
+  }
+
+  let narrative: { text: string; model: string; backend: string } | null = null;
+  if (isCrusoeReady() || isOpenRouterReady()) {
+    try {
+      narrative = await revokeImpactNarrative(graph);
+    } catch (err) {
+      narrative = {
+        text: `Impact preview unavailable from AI (${(err as Error).message}). ${graph.clip_count} clip(s), ${graph.export_count} export edge(s).`,
+        model: "none",
+        backend: graph.backend,
+      };
+    }
+  } else {
+    narrative = {
+      text: `${graph.subject || "This Pass"} has ${graph.clip_count} linked clip(s) and ${graph.export_count} export record(s). Revoking opts them out of live public treatment.`,
+      model: "heuristic",
+      backend: graph.backend,
+    };
+  }
+
+  res.json({ graph, narrative });
+});
+
+api.post("/ai/judge-panel", async (req, res) => {
+  if (!isOpenRouterReady()) {
+    return res.status(503).json({ error: "OpenRouter not configured" });
+  }
+
+  const clipId = typeof req.body?.clip_id === "string" ? req.body.clip_id : undefined;
+  let clip = clipId ? getClip(clipId) : getLatestClip();
+  const receipts = listReceipts().slice(-8);
+  let edges: ReturnType<typeof getRightsGraph> = [];
+  try {
+    const graph = await getRightsGraphPayload();
+    edges = (graph.edges ?? []).slice(-12);
+  } catch {
+    edges = getRightsGraph().slice(-12);
+  }
+
+  const context = {
+    clip: clip ?? null,
+    recent_receipts: receipts,
+    rights_graph_edges: edges,
+    question:
+      typeof req.body?.question === "string"
+        ? req.body.question
+        : "Judge panel: short take on this consent/export decision.",
+  };
+
+  try {
+    const { cards, models } = await runJudgePanel(context);
+    res.json({ cards, models });
+  } catch (err) {
+    const msg = (err as Error).message || "judge_panel_failed";
+    const status = /not configured/i.test(msg) ? 503 : 502;
+    res.status(status).json({ error: msg });
+  }
+});
+
+api.get("/ai/anomalies", (_req, res) => {
+  const anomalies = detectAnomalies();
+  res.json({ anomalies, count: anomalies.length });
 });
 
 // --- Clip stubs (post-capture) ---

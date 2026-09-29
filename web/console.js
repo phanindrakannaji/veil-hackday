@@ -27,6 +27,8 @@ document.getElementById("btnDenyPromoExport").onclick = () => policyExport(false
 document.getElementById("btnAllowPromoExport").onclick = () => policyExport(true);
 document.getElementById("btnExportOnly").onclick = () => exportOnly();
 document.getElementById("btnExplain").onclick = () => explainDecision();
+document.getElementById("btnConsentBrief").onclick = () => runConsentBrief();
+document.getElementById("btnJudgePanel").onclick = () => runJudgePanel();
 
 function setHeroStatus(html) {
   const el = document.getElementById("heroStatus");
@@ -167,6 +169,7 @@ async function loadPasses() {
         <div class="person-card-actions">
           <button class="btn good" data-act="promo-on" data-id="${esc(p.token_id)}" ${disabled}>Allow promo</button>
           <button class="btn warn" data-act="promo-off" data-id="${esc(p.token_id)}" ${disabled}>Block promo</button>
+          <button class="btn ghost" data-act="impact" data-id="${esc(p.token_id)}">Revoke impact</button>
           <button class="btn bad" data-act="revoke" data-id="${esc(p.token_id)}" ${disabled}>Revoke Pass</button>
         </div>
       </article>`;
@@ -177,9 +180,13 @@ async function loadPasses() {
     btn.onclick = async () => {
       const id = btn.dataset.id;
       const act = btn.dataset.act;
-      if (act === "revoke") {
+      if (act === "impact") {
+        await runRevokeImpact(id);
+        return;
+      } else if (act === "revoke") {
         if (!confirm("Revoke this Pass? They’ll be treated as opted out.")) return;
         await fetch(`${API}/pass/${id}/revoke`, { method: "POST" });
+        await runRevokeImpact(id);
       } else if (act === "promo-on") {
         await fetch(`${API}/pass/${id}`, {
           method: "PATCH",
@@ -519,25 +526,88 @@ function esc(s) {
 
 
 
-async function loadOpenRouterStatus() {
-  const el = document.getElementById("openRouterChip");
-  if (!el) return;
+async function loadAiStatus() {
+  const crusoeEl = document.getElementById("crusoeChip");
+  const orEl = document.getElementById("openRouterChip");
+  const rightsEl = document.getElementById("rightsBackendChip");
   try {
-    const res = await fetch(`${API}/openrouter/status`);
+    const res = await fetch(`${API}/ai/status`);
     const data = await res.json();
-    if (data.ok) {
-      el.textContent = "AI · OpenRouter";
-      el.className = "console-chip chip-ok";
-      el.title = data.model ? `OpenRouter · ${data.model}` : "OpenRouter ready";
-    } else {
-      el.textContent = "AI · OpenRouter";
-      el.className = "console-chip chip-muted";
-      el.title = "OpenRouter not configured";
+    if (crusoeEl) {
+      if (data.crusoe?.ok) {
+        crusoeEl.textContent = "AI · Crusoe";
+        crusoeEl.className = "console-chip chip-ok";
+        crusoeEl.title = data.crusoe.model
+          ? `Crusoe primary · ${data.crusoe.model}`
+          : "Crusoe ready";
+      } else {
+        crusoeEl.textContent = "AI · Crusoe";
+        crusoeEl.className = "console-chip chip-muted";
+        crusoeEl.title = "Crusoe not configured";
+      }
+    }
+    if (orEl) {
+      if (data.openrouter?.ok) {
+        orEl.textContent = "AI · OpenRouter";
+        orEl.className = "console-chip chip-ok";
+        orEl.title = data.openrouter.model
+          ? `OpenRouter fallback · ${data.openrouter.model}`
+          : "OpenRouter ready";
+      } else {
+        orEl.textContent = "AI · OpenRouter";
+        orEl.className = "console-chip chip-muted";
+        orEl.title = "OpenRouter not configured";
+      }
+    }
+    if (rightsEl && data.neo4j) {
+      if (data.neo4j.ok && data.neo4j.backend === "neo4j") {
+        rightsEl.textContent = "Rights graph · Neo4j";
+        rightsEl.className = "console-chip chip-ok";
+        rightsEl.title = data.neo4j.uri ? `Neo4j · ${data.neo4j.uri}` : "Neo4j connected";
+      } else {
+        rightsEl.textContent = "Rights graph · memory";
+        rightsEl.className = "console-chip chip-muted";
+        rightsEl.title = "In-memory fallback (Neo4j unavailable)";
+      }
     }
   } catch {
-    el.textContent = "AI · OpenRouter";
-    el.className = "console-chip chip-muted";
-    el.title = "Could not reach /api/openrouter/status";
+    if (crusoeEl) {
+      crusoeEl.className = "console-chip chip-muted";
+      crusoeEl.title = "Could not reach /api/ai/status";
+    }
+    if (orEl) {
+      orEl.className = "console-chip chip-muted";
+      orEl.title = "Could not reach /api/ai/status";
+    }
+  }
+}
+
+async function loadAnomalies() {
+  const strip = document.getElementById("anomalyStrip");
+  if (!strip) return;
+  try {
+    const res = await fetch(`${API}/ai/anomalies`);
+    const data = await res.json();
+    const list = data.anomalies || [];
+    if (!list.length) {
+      strip.hidden = true;
+      strip.innerHTML = "";
+      return;
+    }
+    strip.hidden = false;
+    strip.innerHTML = list
+      .map((a) => {
+        const cls =
+          a.severity === "critical"
+            ? "chip-bad"
+            : a.severity === "warn"
+              ? "chip-warn"
+              : "chip-muted";
+        return `<span class="console-chip ${cls}" title="${esc(a.detail)}">${esc(a.title)}</span>`;
+      })
+      .join("");
+  } catch {
+    /* keep prior strip */
   }
 }
 
@@ -551,7 +621,7 @@ async function explainDecision() {
   panel.hidden = false;
   textEl.textContent = "Thinking…";
   if (modelChip) {
-    modelChip.textContent = "OpenRouter";
+    modelChip.textContent = "Crusoe→OpenRouter";
     modelChip.className = "console-chip chip-muted";
   }
   if (btn) btn.disabled = true;
@@ -566,14 +636,15 @@ async function explainDecision() {
     const data = await res.json();
     if (!res.ok) {
       textEl.textContent =
-        data.error === "OpenRouter not configured"
-          ? "OpenRouter isn’t configured on this server."
+        data.error === "No AI backend configured"
+          ? "No AI backend configured (Crusoe / OpenRouter)."
           : `Couldn’t explain: ${data.error || "something went wrong"}`;
       return;
     }
     textEl.textContent = data.text || "(empty)";
     if (modelChip) {
-      modelChip.textContent = data.model || "OpenRouter";
+      const be = data.backend === "crusoe" ? "Crusoe" : "OpenRouter";
+      modelChip.textContent = `${be} · ${data.model || ""}`.trim();
       modelChip.className = "console-chip chip-ok";
     }
   } catch (err) {
@@ -583,26 +654,139 @@ async function explainDecision() {
   }
 }
 
-async function loadRightsBackend() {
-  const el = document.getElementById("rightsBackendChip");
-  if (!el) return;
+async function runConsentBrief() {
+  const panel = document.getElementById("consentBriefPanel");
+  const textEl = document.getElementById("consentBriefText");
+  const chip = document.getElementById("consentBriefChip");
+  const btn = document.getElementById("btnConsentBrief");
+  if (!panel || !textEl) return;
+  panel.hidden = false;
+  textEl.textContent = "Gathering consent snapshot…";
+  if (chip) {
+    chip.textContent = "Crusoe";
+    chip.className = "console-chip chip-muted";
+  }
+  if (btn) btn.disabled = true;
   try {
-    const res = await fetch(`${API}/neo4j/status`);
+    const res = await fetch(`${API}/ai/consent-brief`, { method: "POST" });
     const data = await res.json();
-    if (data.ok && data.backend === "neo4j") {
-      el.textContent = "Rights graph · Neo4j";
-      el.className = "console-chip chip-ok";
-      el.title = data.uri ? `Neo4j · ${data.uri}` : "Neo4j connected";
-    } else {
-      el.textContent = "Rights graph · memory";
-      el.className = "console-chip chip-muted";
-      el.title = "In-memory fallback (Neo4j unavailable)";
+    if (!res.ok) {
+      textEl.textContent = `Couldn’t brief: ${data.error || "error"}`;
+      return;
+    }
+    textEl.textContent = data.text || "(empty)";
+    if (chip) {
+      const be = data.backend === "crusoe" ? "Crusoe" : "OpenRouter";
+      chip.textContent = `${be} · ${data.model || ""}`.trim();
+      chip.className = "console-chip chip-ok";
     }
   } catch {
-    el.textContent = "Rights graph · memory";
-    el.className = "console-chip chip-muted";
-    el.title = "Could not reach /api/neo4j/status";
+    textEl.textContent = "Couldn’t reach consent-brief API.";
+  } finally {
+    if (btn) btn.disabled = false;
   }
+}
+
+async function runJudgePanel() {
+  const panel = document.getElementById("judgePanel");
+  const cardsEl = document.getElementById("judgeCards");
+  const btn = document.getElementById("btnJudgePanel");
+  if (!panel || !cardsEl) return;
+  panel.hidden = false;
+  cardsEl.innerHTML = `<p class="muted small">Asking models…</p>`;
+  if (btn) btn.disabled = true;
+  try {
+    const body = latestClipId ? { clip_id: latestClipId } : {};
+    const res = await fetch(`${API}/ai/judge-panel`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      cardsEl.innerHTML = `<p class="muted small">${esc(data.error || "Judge panel failed")}</p>`;
+      return;
+    }
+    cardsEl.innerHTML = (data.cards || [])
+      .map((c) => {
+        if (c.error) {
+          return `<article class="judge-card judge-card-err">
+            <div class="judge-card-model">${esc(c.model)}</div>
+            <p class="judge-card-text">${esc(c.error)}</p>
+          </article>`;
+        }
+        return `<article class="judge-card">
+          <div class="judge-card-model">${esc(c.model)}</div>
+          <p class="judge-card-text">${esc(c.text || "")}</p>
+        </article>`;
+      })
+      .join("");
+  } catch {
+    cardsEl.innerHTML = `<p class="muted small">Couldn’t reach judge-panel API.</p>`;
+  } finally {
+    if (btn) btn.disabled = false;
+  }
+}
+
+async function runRevokeImpact(tokenId) {
+  const panel = document.getElementById("revokeImpactPanel");
+  const textEl = document.getElementById("revokeImpactText");
+  const chip = document.getElementById("revokeImpactChip");
+  const graphEl = document.getElementById("revokeImpactGraph");
+  if (!panel || !textEl) return;
+  panel.hidden = false;
+  textEl.textContent = "Computing blast radius…";
+  if (chip) {
+    chip.textContent = "preview";
+    chip.className = "console-chip chip-muted";
+  }
+  if (graphEl) {
+    graphEl.hidden = true;
+    graphEl.textContent = "";
+  }
+  try {
+    const res = await fetch(`${API}/ai/revoke-impact`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token_id: tokenId }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      textEl.textContent = `Couldn’t preview: ${data.error || "error"}`;
+      return;
+    }
+    const g = data.graph || {};
+    const n = data.narrative || {};
+    textEl.textContent =
+      n.text ||
+      `${g.subject || "Pass"}: ${g.clip_count || 0} clip(s), ${g.export_count || 0} export(s).`;
+    if (chip) {
+      const be = n.backend === "crusoe" ? "Crusoe" : n.backend === "openrouter" ? "OpenRouter" : g.backend || "graph";
+      chip.textContent = `${be} · ${g.clip_count || 0} clips`;
+      chip.className = "console-chip chip-warn";
+    }
+    if (graphEl && g.clips) {
+      graphEl.hidden = false;
+      graphEl.textContent = JSON.stringify(
+        {
+          backend: g.backend,
+          subject: g.subject,
+          clip_count: g.clip_count,
+          export_count: g.export_count,
+          clips: g.clips,
+        },
+        null,
+        2
+      );
+    }
+  } catch {
+    textEl.textContent = "Couldn’t reach revoke-impact API.";
+  }
+}
+
+async function loadRightsBackend() {
+  // Prefer unified /ai/status which also sets Neo4j chip
+  await loadAiStatus();
 }
 
 async function refreshAll() {
@@ -610,7 +794,8 @@ async function refreshAll() {
   await loadLatestClip();
   await loadClips();
   await loadActivity();
-  await loadRightsBackend();
+  await loadAiStatus();
+  await loadAnomalies();
 }
 
 refreshAll();

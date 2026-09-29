@@ -13,6 +13,7 @@ import { api } from "./routes.js";
 import { loadReceiptsFromDisk } from "./receipts.js";
 import { initNeo4j, closeNeo4j, isNeo4jReady, getNeo4jUri } from "./neo4j.js";
 import { isOpenRouterReady, getOpenRouterModel } from "./openrouter.js";
+import { isCrusoeReady, getCrusoeModel } from "./crusoe.js";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const PORT = Number(process.env.PORT || 8787);
@@ -69,10 +70,15 @@ async function boot() {
     } else {
       console.log("  Rights graph: in-memory (Neo4j unavailable)");
     }
-    if (isOpenRouterReady()) {
+    if (isCrusoeReady()) {
+      console.log(`  Explain: Crusoe · ${getCrusoeModel()} (OpenRouter fallback)`);
+    } else if (isOpenRouterReady()) {
       console.log(`  Explain: OpenRouter · ${getOpenRouterModel()}`);
     } else {
-      console.log("  Explain: OpenRouter not configured");
+      console.log("  Explain: no AI backend configured");
+    }
+    if (isOpenRouterReady()) {
+      console.log(`  Judge panel: OpenRouter · ${getOpenRouterModel()}`);
     }
     console.log("");
     console.log("  Note: browsers require HTTPS (or localhost) for getUserMedia.");

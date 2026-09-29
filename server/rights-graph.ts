@@ -5,7 +5,7 @@
  */
 
 import { v4 as uuid } from "uuid";
-import { getDriver, isNeo4jReady, countVeilGraph } from "./neo4j.js";
+import { getDriver, isNeo4jReady, countVeilGraph, type RevokeImpactGraph } from "./neo4j.js";
 
 export interface ClipStub {
   clip_id: string;
@@ -243,4 +243,43 @@ export async function getRightsGraphPayload(): Promise<{
     if (counts) payload.neo4j = counts;
   }
   return payload;
+}
+
+
+/** In-memory blast radius when Neo4j is down. */
+export function memoryRevokeImpact(tokenId: string): RevokeImpactGraph {
+  const related = listClips().filter((c) => c.token_id === tokenId);
+  const relatedEdges = edges.filter((e) => e.token_id === tokenId);
+  const clips = related.map((c) => {
+    const exports = relatedEdges
+      .filter(
+        (e) =>
+          e.clip_id === c.clip_id &&
+          e.action !== "captured" &&
+          e.action !== "clip_created"
+      )
+      .map((e) => ({
+        action: e.action,
+        ts: e.ts,
+        person: e.person,
+      }));
+    return {
+      clip_id: c.clip_id,
+      label: c.label,
+      export_status: c.export_status,
+      track_id: c.track_id,
+      captured_at: c.captured_at,
+      exports,
+    };
+  });
+  const subject = related[0]?.subject;
+  return {
+    backend: "memory",
+    token_id: tokenId,
+    subject,
+    pass_found: related.length > 0 || relatedEdges.some((e) => e.token_id === tokenId),
+    clips,
+    clip_count: clips.length,
+    export_count: clips.reduce((n, c) => n + c.exports.length, 0),
+  };
 }

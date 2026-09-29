@@ -54,10 +54,10 @@
         <div class="do">Mac: <strong>Capture clip</strong>.</div>
       </div>
       <div class="cue-step"><span class="cue-time">1:40</span> <span class="say">“Organizer changes promo policy — re-export is blocked or allowed with a receipt.”</span>
-        <div class="do">iPad: Deny promo → re-export · then Allow promo → re-export · show receipts / graph. Optional: <strong>Explain this decision</strong> (OpenRouter) for judges.</div>
+        <div class="do">iPad: Deny promo → re-export · then Allow promo → re-export · show receipts / graph. Optional: <strong>Explain</strong> (Crusoe→OpenRouter), <strong>Consent brief</strong>, <strong>Judge panel</strong>.</div>
       </div>
       <div class="cue-step"><span class="cue-time">2:20</span> <span class="say">“Revoke and the live view goes deny — consent isn’t one-and-done.”</span>
-        <div class="do">iPhone: <strong>Revoke</strong> · PUBLIC → deny.</div>
+        <div class="do">iPad: <strong>Revoke impact</strong> preview · then Revoke · PUBLIC → deny. Anomaly strip flags revoked-with-clips.</div>
       </div>
       <div class="cue-step"><span class="cue-time">2:40</span> <span class="say">“Beachhead: conference / venue organizers. Capture Enforcement SDK + Media Rights Graph — Neo4j when available, memory fallback for the live demo.”</span>
         <div class="do">One sentence ask: event pilot vs multi-venue rollout. Console chip shows Rights graph · Neo4j.</div>
@@ -66,6 +66,16 @@
         <div class="do">Show FACTORY-BOOTSTRAP: impact → contracts → workers → Sentinel gates → READY_TO_MERGE.</div>
       </div>
       <div class="cue-step"><span class="cue-time">4:20</span> <span class="say">Close: “Policy layer for cameras + control plane for agents. Who wants a pilot?”</span></div>
+    </div>
+
+    <div class="card stack">
+      <span class="section-label">Stack roles</span>
+      <h2>Neo4j · Crusoe · OpenRouter</h2>
+      <ul class="cue-list small">
+        <li><strong>Neo4j</strong> — Media Rights Graph (Person/Pass/Clip + CAPTURED/EXPORTED); memory fallback if down.</li>
+        <li><strong>Crusoe</strong> — primary LLM for Explain, Consent brief, Revoke impact narrative (fast flash model).</li>
+        <li><strong>OpenRouter</strong> — fallback if Crusoe fails; multi-model <strong>Judge panel</strong> in parallel.</li>
+      </ul>
     </div>
 
     <div class="card stack">

@@ -7,3 +7,4 @@ data/*.jsonl
 *.log
 .DS_Store
 .env.openrouter
+.env.crusoe

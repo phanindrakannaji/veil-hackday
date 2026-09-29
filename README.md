@@ -58,22 +58,37 @@ HMAC secret: `VEIL_HMAC_SECRET` (demo default OK on LAN).
 
 - `POST /api/pass/issue` · `GET /api/pass/latest` · `POST /api/pass/:id/public` · `POST /api/pass/:id/revoke`
 - `POST /api/decide` · `POST /api/clips` · `POST /api/clips/:id/export` · `POST /api/clips/:id/policy-export`
-- `GET /api/receipts` · `GET /api/rights-graph` · `GET /api/neo4j/status` · `GET /api/openrouter/status` · `POST /api/ai/explain` · `POST /api/demo/reset` · `GET /api/demo/epoch`
+- `GET /api/receipts` · `GET /api/rights-graph` · `GET /api/neo4j/status` · `GET /api/ai/status` · `GET /api/crusoe/status` · `GET /api/openrouter/status`
+- `POST /api/ai/explain` · `POST /api/ai/consent-brief` · `POST /api/ai/revoke-impact` · `POST /api/ai/judge-panel` · `GET /api/ai/anomalies`
+- `POST /api/demo/reset` · `GET /api/demo/epoch`
 
 
 ---
 
-## OpenRouter (explain decisions)
+## AI layer (Crusoe → OpenRouter) + anomalies
 
-Optional AI helper on Console: **Explain this decision** summarizes the latest capture + receipts + rights-graph edges for judges.
+Console chips: **AI · Crusoe** (primary) and **AI · OpenRouter** (fallback / judge panel).
+
+| Feature | Endpoint | Backend |
+|---------|----------|---------|
+| Explain decision | `POST /api/ai/explain` | **Crusoe first**, OpenRouter on failure/timeout |
+| Consent brief | `POST /api/ai/consent-brief` | Crusoe (auto fallback) — 3-sentence organizer brief |
+| Revoke impact | `POST /api/ai/revoke-impact` `{ token_id }` | Neo4j blast radius → Crusoe narrative (memory fallback) |
+| Judge panel | `POST /api/ai/judge-panel` | 2–3 OpenRouter models in parallel |
+| Anomalies | `GET /api/ai/anomalies` | Pure heuristics (no LLM) |
+| Status | `GET /api/ai/status` | `{ crusoe, openrouter, neo4j }` |
 
 ```bash
-# in .env (never commit)
+# in .env (never commit keys)
+CRUSOE_API_KEY=...
+CRUSOE_BASE_URL=https://api.inference.crusoecloud.com/v1
+CRUSOE_MODEL=deepseek-ai/Deepseek-V4-Flash   # demo latency; override GLM-5.3-Flash / gpt-oss-120b
 OPENROUTER_API_KEY=sk-or-...
-OPENROUTER_MODEL=openai/gpt-4o-mini   # optional override
+OPENROUTER_MODEL=openai/gpt-4o-mini
+OPENROUTER_PANEL_MODELS=openai/gpt-4o-mini,qwen/qwen-2.5-7b-instruct,mistralai/mistral-small-3.1-24b-instruct
 ```
 
-`GET /api/openrouter/status` → `{ ok, model? }` · `POST /api/ai/explain` → `{ text, model, backend: "openrouter" }` (503 if key missing).
+Compat: `GET /api/crusoe/status` · `GET /api/openrouter/status` still work.
 
 ## Media Rights Graph (Neo4j)
 
