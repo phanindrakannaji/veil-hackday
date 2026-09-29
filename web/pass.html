@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-title" content="Veil Pass" />
+  <title>Veil · Pass</title>
+  <link rel="stylesheet" href="/shared.css" />
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js"></script>
+</head>
+<body>
+  <div class="topbar">
+    <div class="brand">Veil <span>Pass</span></div>
+    <nav class="nav">
+      <a href="/camera">Camera</a>
+      <a class="active" href="/pass">Pass</a>
+      <a href="/console">Console</a>
+    </nav>
+  </div>
+  <div class="wrap">
+    <div class="qr-wrap card">
+      <canvas id="qr"></canvas>
+      <div class="subject" id="subject">No pass yet</div>
+      <div class="mono small muted" id="tokenMeta"></div>
+      <div class="small" style="margin-top:0.5rem">
+        Public livestream:
+        <span class="badge" id="publicBadge">—</span>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:1rem">
+      <h2>My policy (public livestream)</h2>
+      <p class="small">Tap to update rights. Camera Public pane reacts within ~1.5s.</p>
+      <div class="btn-row">
+        <button class="btn good" id="btnAllow">Allow</button>
+        <button class="btn warn" id="btnBlur">Blur</button>
+        <button class="btn bad" id="btnDeny">Deny</button>
+      </div>
+      <button class="btn bad block" id="btnRevoke">Revoke Pass</button>
+      <button class="btn ghost block" id="btnNew">Get new Pass (self-issue)</button>
+    </div>
+  </div>
+  <script src="/pass.js" type="module"></script>
+</body>
+</html>

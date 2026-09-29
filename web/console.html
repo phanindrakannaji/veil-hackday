@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Veil · Console</title>
+  <link rel="stylesheet" href="/shared.css" />
+</head>
+<body>
+  <div class="topbar">
+    <div class="brand">Veil <span>Console</span></div>
+    <nav class="nav">
+      <a href="/camera">Camera</a>
+      <a href="/pass">Pass</a>
+      <a class="active" href="/console">Console</a>
+    </nav>
+  </div>
+  <div class="wrap stack">
+    <div class="grid-2">
+      <div class="card stack">
+        <h2>Issue Pass</h2>
+        <p class="small">Creates an ephemeral credential for an attendee.</p>
+        <label class="small muted">Event id</label>
+        <input id="eventId" value="hackday-demo" />
+        <label class="small muted">TTL (minutes)</label>
+        <input id="ttl" type="number" value="120" />
+        <button class="btn primary block" id="btnIssue">Issue Pass</button>
+        <div class="mono small" id="issuedOut"></div>
+      </div>
+
+      <div class="card stack">
+        <h2>Audience views</h2>
+        <p class="small">Quick reference — open Camera for live dual panes.</p>
+        <ul class="small muted" style="margin:0;padding-left:1.2rem">
+          <li><strong>Internal</strong> — operator / less redaction</li>
+          <li><strong>Public</strong> — enforce Pass treatment</li>
+          <li><strong>Export</strong> — post-capture rights check</li>
+        </ul>
+        <a class="btn block" href="/camera">Open Camera</a>
+      </div>
+    </div>
+
+    <div class="card stack">
+      <h2>Active Passes</h2>
+      <div id="passTable" class="small muted">Loading…</div>
+    </div>
+
+    <div class="card stack">
+      <h2>Clips · change policy after capture</h2>
+      <p class="small">Update Pass permissions, then try export — blocked / transformed + receipt.</p>
+      <div id="clipTable" class="small muted">No clips yet. Capture from Camera.</div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card stack">
+        <h2>Decision receipts</h2>
+        <button class="btn" id="btnRefreshReceipts">Refresh</button>
+        <div id="receipts" class="mono small" style="max-height:280px;overflow:auto"></div>
+      </div>
+      <div class="card stack">
+        <h2>Media Rights Graph</h2>
+        <p class="small">person → clip → policy version → action</p>
+        <pre id="graph" class="mono small" style="max-height:280px;overflow:auto;white-space:pre-wrap;margin:0"></pre>
+      </div>
+    </div>
+  </div>
+  <script src="/console.js" type="module"></script>
+</body>
+</html>

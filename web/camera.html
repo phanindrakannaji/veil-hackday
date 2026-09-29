@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Veil · Camera</title>
+  <link rel="stylesheet" href="/shared.css" />
+</head>
+<body>
+  <div class="topbar">
+    <div class="brand">Veil <span>Camera</span></div>
+    <nav class="nav">
+      <a class="active" href="/camera">Camera</a>
+      <a href="/pass">Pass</a>
+      <a href="/console">Console</a>
+    </nav>
+  </div>
+  <div class="wrap stack">
+    <div class="btn-row">
+      <button class="btn primary" id="btnStart">Start camera</button>
+      <button class="btn" id="btnFallback">Use sample still</button>
+      <button class="btn" id="btnAddPerson">Add person track</button>
+      <button class="btn good" id="btnBind">Bind scanned Pass</button>
+      <button class="btn" id="btnCapture">Capture clip stub</button>
+    </div>
+    <p class="small muted" id="camStatus">Camera idle. On LAN HTTP, getUserMedia may be blocked — use sample still.</p>
+
+    <div class="grid-2">
+      <div>
+        <div class="pane" id="paneInternal">
+          <div class="label">INTERNAL</div>
+          <video id="vidInternal" autoplay playsinline muted></video>
+          <img class="fallback" id="stillInternal" hidden alt="still" />
+          <div id="boxesInternal"></div>
+        </div>
+      </div>
+      <div>
+        <div class="pane" id="panePublic">
+          <div class="label">PUBLIC LIVESTREAM</div>
+          <video id="vidPublic" autoplay playsinline muted></video>
+          <img class="fallback" id="stillPublic" hidden alt="still" />
+          <div id="boxesPublic"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card stack">
+      <h2>Person tracks</h2>
+      <div id="trackList" class="mono small muted">No tracks yet.</div>
+      <label class="small muted">Bind token id (from Pass QR / Console)</label>
+      <input id="tokenInput" placeholder="paste token_id" />
+    </div>
+  </div>
+
+  <script src="/camera.js" type="module"></script>
+</body>
+</html>
