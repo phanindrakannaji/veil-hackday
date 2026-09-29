@@ -167,8 +167,8 @@ async function loadPasses() {
           </div>
         </div>
         <div class="person-card-actions">
-          <button class="btn good" data-act="promo-on" data-id="${esc(p.token_id)}" ${disabled}>Allow promo</button>
-          <button class="btn warn" data-act="promo-off" data-id="${esc(p.token_id)}" ${disabled}>Block promo</button>
+          <button class="btn good" data-act="promo-on" data-id="${esc(p.token_id)}" ${disabled}>Allow marketing use</button>
+          <button class="btn warn" data-act="promo-off" data-id="${esc(p.token_id)}" ${disabled}>Block marketing use</button>
           <button class="btn ghost" data-act="impact" data-id="${esc(p.token_id)}">Revoke impact</button>
           <button class="btn bad" data-act="revoke" data-id="${esc(p.token_id)}" ${disabled}>Revoke Pass</button>
         </div>
