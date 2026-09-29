@@ -3,6 +3,7 @@
  */
 
 import { Router, type Request, type Response } from "express";
+import QRCode from "qrcode";
 import {
   issuePass,
   getToken,
@@ -71,6 +72,28 @@ api.get("/pass/:tokenId", (req, res) => {
   const t = getToken(req.params.tokenId);
   if (!t) return res.status(404).json({ error: "not_found" });
   res.json(t);
+});
+
+api.get("/pass/:tokenId/qr", async (req, res) => {
+  const t = getToken(req.params.tokenId);
+  if (!t) return res.status(404).json({ error: "not_found" });
+  
+  const protocol = req.headers['x-forwarded-proto'] || (req.secure ? 'https' : 'http');
+  const host = req.headers['x-forwarded-host'] || req.headers.host;
+  const publicOrigin = `${protocol}://${host}`;
+  const bindUrl = `${publicOrigin}/camera?bind=${encodeURIComponent(req.params.tokenId)}`;
+  
+  try {
+    const buffer = await QRCode.toBuffer(bindUrl, {
+      width: 280,
+      margin: 1,
+      color: { dark: "#0b0f14", light: "#ffffff" },
+    });
+    res.setHeader("Content-Type", "image/png");
+    res.send(buffer);
+  } catch (err) {
+    res.status(500).json({ error: "qr_generation_failed" });
+  }
 });
 
 api.post("/pass/:tokenId/revoke", (req, res) => {

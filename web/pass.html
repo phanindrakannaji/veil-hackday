@@ -10,7 +10,6 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@450;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/shared.css" />
-  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js"></script>
 </head>
 <body>
   <div class="topbar">
@@ -30,7 +29,8 @@
         <span class="badge" id="publicBadge">—</span>
         <span class="badge" id="bindingBadge" style="margin-left:0.4rem">—</span>
       </div>
-      <canvas id="qr"></canvas>
+      <img id="qr" alt="QR code" />
+      <p class="small muted" id="qrError" style="display:none;margin-top:0.5rem">QR load failed</p>
       <div class="subject" id="subject">No pass yet</div>
       <div class="mono small muted" id="tokenMeta"></div>
       <div class="token-copy-row">

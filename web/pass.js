@@ -11,7 +11,8 @@ const metaEl = document.getElementById("tokenMeta");
 const badgeEl = document.getElementById("publicBadge");
 const bindingBadgeEl = document.getElementById("bindingBadge");
 const tokenFullEl = document.getElementById("tokenFull");
-const qrCanvas = document.getElementById("qr");
+const qrImg = document.getElementById("qr");
+const qrError = document.getElementById("qrError");
 
 let tokenId = localStorage.getItem(LS_KEY);
 let signed = null;
@@ -67,11 +68,6 @@ async function load(id) {
   return true;
 }
 
-function bindUrl() {
-  if (!signed) return location.origin + "/camera";
-  return `${location.origin}/camera?bind=${encodeURIComponent(signed.payload.token_id)}`;
-}
-
 function render() {
   if (!signed) return;
   const p = signed.payload;
@@ -85,13 +81,19 @@ function render() {
 }
 
 function drawQR() {
-  if (!signed || typeof QRCode === "undefined") return;
-  const url = bindUrl();
-  QRCode.toCanvas(qrCanvas, url, {
-    width: 280,
-    margin: 1,
-    color: { dark: "#0b0f14", light: "#ffffff" },
-  });
+  if (!signed || !qrImg) return;
+  const id = signed.payload.token_id;
+  const timestamp = Date.now();
+  qrImg.src = `${API}/pass/${encodeURIComponent(id)}/qr?t=${timestamp}`;
+  qrImg.onerror = () => {
+    if (qrError) {
+      qrError.style.display = "block";
+      qrError.textContent = "QR load failed";
+    }
+  };
+  qrImg.onload = () => {
+    if (qrError) qrError.style.display = "none";
+  };
 }
 
 async function copyToken() {
