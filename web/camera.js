@@ -56,7 +56,6 @@ document.getElementById("btnStart").onclick = () => startCamera({ manual: true }
 document.getElementById("btnFallback").onclick = () => useFallback("Sample still selected.");
 document.getElementById("btnAddPerson").onclick = () =>
   addTrack({ manualLock: true, auto: false, label: "Manual" });
-document.getElementById("btnBindLatest").onclick = bindLatestPass;
 document.getElementById("btnBindManual").onclick = bindManual;
 document.getElementById("btnCapture").onclick = captureClip;
 document.getElementById("btnJudge").onclick = () => runJudgeMode();
@@ -78,7 +77,7 @@ function startConsentStation() {
   const banner = document.getElementById("stationBanner");
   banner.classList.add("on");
   banner.textContent = "Consent Station active — scanning for Pass QR…";
-  camStatus.textContent = "QR scanning active — hold Pass QR at camera, or tap a face / Bind latest as backup.";
+  camStatus.textContent = "QR scanning active — hold Pass QR at camera, or tap a face to bind.";
   startQRScanning();
 }
 
@@ -337,20 +336,10 @@ async function fetchUnboundPass() {
   return free[0] || null;
 }
 
-async function bindLatestPass() {
-  const signed = await fetchUnboundPass();
-  if (!signed) {
-    camStatus.textContent =
-      "No unbound Pass left — open another phone /pass or Prep on Console.";
-    return;
-  }
-  applyBind(signed.payload.token_id, signed);
-}
-
 async function bindManual() {
   const tokenId = tokenInput.value.trim();
   if (!tokenId) {
-    camStatus.textContent = "Paste a token_id, or use Scan / bind latest Pass.";
+    camStatus.textContent = "Paste a token_id, or show Pass QR at camera / tap a face.";
     return;
   }
   const res = await fetch(`${API}/pass/${tokenId}`);
@@ -496,7 +485,7 @@ function updateChrome() {
   setStep(4, "");
   if (camHint) {
     if (!hasFaces) camHint.textContent = "Point the camera at people — faces get boxes automatically. Show Pass QR for instant bind.";
-    else if (!bound) camHint.textContent = "Show Pass QR at camera — or tap a face / Bind latest as backup.";
+    else if (!bound) camHint.textContent = "Show Pass QR at camera — or tap a face to bind.";
     else camHint.textContent = "PUBLIC should match Pass policy. Capture when ready, then use Console.";
   }
 }
@@ -683,7 +672,7 @@ async function captureClip() {
   const track = tracks.find((t) => t.token_id);
   if (!track) {
     camStatus.textContent =
-      "Bind a Pass first (Scan / bind latest Pass), then Capture — clip needs a real token.";
+      "Bind a Pass first (show QR or tap face), then Capture — clip needs a real token.";
     return;
   }
   const res = await fetch(`${API}/clips`, {

@@ -13,7 +13,7 @@ import {
 } from "./policy.js";
 
 const tokens = new Map<string, SignedToken>();
-/** Most recently issued token id — Camera "bind latest" uses this. */
+/** Most recently issued token id — used to find unbound Passes for tap-face binding. */
 let latestIssuedId: string | null = null;
 
 export interface IssuePassInput {

@@ -561,7 +561,7 @@ api.post("/demo/prep", (_req, res) => {
     ok: true,
     epoch: demoEpoch,
     pass: signed,
-    note: "Clean slate + Pass issued. Camera re-seeds Unknown; station enroll or tap Scan / bind latest Pass.",
+    note: "Clean slate + Pass issued. Camera re-seeds Unknown; show QR or tap face to bind.",
   });
 });
 
