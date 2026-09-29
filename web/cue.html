@@ -3,11 +3,209 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Veil · Cue card</title>
+  <title>Veil · Cue</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@450;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/shared.css" />
+  <style>
+    .cue-controls {
+      position: sticky;
+      top: 4.5rem;
+      z-index: 30;
+      background: var(--panel-solid);
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius-lg);
+      padding: 1.2rem 1.3rem;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 8px 28px rgba(0, 0, 0, 0.3);
+    }
+    .timer-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+    .timer-display {
+      font-size: 2.8rem;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+      font-family: var(--font-mono);
+      color: var(--accent);
+      letter-spacing: -0.02em;
+      text-shadow: 0 0 20px rgba(56, 189, 248, 0.3);
+    }
+    .timer-display.running {
+      color: var(--good);
+      text-shadow: 0 0 20px rgba(52, 211, 153, 0.3);
+    }
+    .timer-controls {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+    .timer-controls .btn {
+      min-width: 90px;
+    }
+    .progress-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      font-size: 0.85rem;
+      color: var(--muted);
+      font-weight: 600;
+    }
+    .progress-block {
+      padding: 0.3rem 0.75rem;
+      border-radius: var(--radius-pill);
+      background: rgba(56, 189, 248, 0.12);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      color: var(--accent);
+      font-weight: 700;
+      font-size: 0.75rem;
+      letter-spacing: 0.08em;
+    }
+    .progress-block.fabric {
+      background: rgba(167, 139, 250, 0.12);
+      border-color: rgba(167, 139, 250, 0.3);
+      color: var(--blur);
+    }
+    .nav-row {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 1rem;
+    }
+    .nav-row .btn {
+      flex: 1;
+      font-size: 1.1rem;
+      min-height: 3rem;
+    }
+    .beat-display {
+      min-height: 320px;
+    }
+    .beat-card {
+      background: linear-gradient(155deg, rgba(56, 189, 248, 0.08) 0%, transparent 48%), var(--panel);
+      border: 1px solid var(--border-accent);
+      border-radius: var(--radius-lg);
+      padding: 1.8rem 1.6rem;
+      box-shadow: var(--inner-glow), 0 0 0 1px rgba(56, 189, 248, 0.08), 0 12px 36px rgba(0, 0, 0, 0.3);
+    }
+    .beat-card.fabric {
+      background: linear-gradient(155deg, rgba(167, 139, 250, 0.08) 0%, transparent 48%), var(--panel);
+      border-color: rgba(167, 139, 250, 0.3);
+      box-shadow: var(--inner-glow), 0 0 0 1px rgba(167, 139, 250, 0.08), 0 12px 36px rgba(0, 0, 0, 0.3);
+    }
+    .beat-target {
+      color: var(--muted-dim);
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 0.3rem;
+    }
+    .beat-title {
+      font-size: 1.8rem;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      color: var(--text-bright);
+      margin: 0 0 1rem;
+    }
+    .beat-talk {
+      margin: 1.2rem 0;
+    }
+    .beat-talk-line {
+      font-size: 1.15rem;
+      line-height: 1.5;
+      color: var(--text);
+      margin: 0.7rem 0;
+      font-weight: 500;
+      letter-spacing: -0.01em;
+    }
+    .beat-action {
+      margin-top: 1.5rem;
+      padding: 1rem 1.1rem;
+      background: rgba(56, 189, 248, 0.08);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      border-radius: var(--radius);
+      border-left: 4px solid var(--accent);
+    }
+    .beat-action-label {
+      font-size: 0.7rem;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 0.4rem;
+    }
+    .beat-action-text {
+      font-size: 0.95rem;
+      line-height: 1.45;
+      color: var(--text);
+      margin: 0;
+    }
+    .beat-visual {
+      margin: 1.5rem 0;
+      padding: 1.5rem;
+      background: rgba(0, 0, 0, 0.3);
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    .beat-visual svg {
+      max-width: 100%;
+      height: auto;
+    }
+    .qa-section {
+      margin-top: 1.5rem;
+    }
+    .qa-toggle {
+      cursor: pointer;
+      user-select: none;
+      padding: 0.8rem 1rem;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      background: rgba(255, 255, 255, 0.03);
+      transition: all 0.15s;
+    }
+    .qa-toggle:hover {
+      background: rgba(255, 255, 255, 0.06);
+      border-color: var(--border-strong);
+    }
+    .qa-toggle h3 {
+      margin: 0;
+      font-size: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .qa-toggle h3::before {
+      content: "▶";
+      font-size: 0.7rem;
+      transition: transform 0.2s;
+    }
+    .qa-toggle.open h3::before {
+      transform: rotate(90deg);
+    }
+    .qa-content {
+      display: none;
+      margin-top: 0.75rem;
+      padding-top: 0.75rem;
+      border-top: 1px solid var(--border);
+    }
+    .qa-content.open {
+      display: block;
+    }
+    @media (max-width: 700px) {
+      .timer-display { font-size: 2.2rem; }
+      .beat-title { font-size: 1.4rem; }
+      .beat-talk-line { font-size: 1rem; }
+      .timer-row { flex-direction: column; align-items: flex-start; }
+    }
+  </style>
 </head>
 <body>
   <div class="topbar">
@@ -20,95 +218,663 @@
       <a class="active" href="/cue">Cue</a>
     </nav>
   </div>
-  <div class="wrap stack">
-    <div>
-      <span class="section-label">Presenter script</span>
-      <h1>~5 min pitch · live demo</h1>
-      <p class="muted small">Thesis: programmable consent for cameras — Pass → bind → enforce → rights graph → revoke. Not “AI blur as the product.”</p>
+
+  <div class="wrap">
+    <div style="margin-bottom: 1.5rem;">
+      <span class="section-label">Timed Demo</span>
+      <h1>5-minute Hack Day click-through</h1>
+      <p class="muted small">4 min Veil + 1 min Fabric · Navigate with Next/Prev or keyboard (→/← or Space)</p>
     </div>
 
-    <div class="card stack">
-      <span class="section-label">Prep</span>
-      <h2>Before you start</h2>
-      <ol class="cue-list small">
-        <li>Mac Terminal: Veil server running · keep that window open</li>
-        <li>Console → <strong>Start clean demo</strong> (or Wipe everything)</li>
-        <li>Mac <code>/camera</code> · iPhone <code>/pass</code> · iPad <code>/console</code> · this tab <code>/cue</code></li>
-        <li>Camera: QR scanning is automatic when camera is live (or drag INTERNAL box onto your face)</li>
-      </ol>
-    </div>
-
-    <div class="card stack">
-      <span class="section-label">Live clock</span>
-      <h2>Timed beats</h2>
-      <div class="cue-step"><span class="cue-time">0:00</span> <span class="say">“Cameras capture by default. Veil makes consent programmable.”</span>
-        <div class="do">Point at dual panes — INTERNAL clear, PUBLIC already blurring Unknown.</div>
+    <div class="cue-controls">
+      <div class="timer-row">
+        <div class="timer-display" id="timer">0:00</div>
+        <div class="timer-controls">
+          <button class="btn good" id="startBtn" onclick="startTimer()">Start</button>
+          <button class="btn ghost" id="resetBtn" onclick="resetTimer()">Reset</button>
+        </div>
       </div>
-      <div class="cue-step"><span class="cue-time">0:30</span> <span class="say">“Attendee issues a Veil Pass — a short-lived credential, not a face ID.”</span>
-        <div class="do">iPhone: Pass shows · tap <strong>Allow</strong>.</div>
+      <div class="progress-row">
+        <div>
+          <span id="beatProgress">Beat 0 of 12</span>
+        </div>
+        <div class="progress-block" id="blockIndicator">VEIL</div>
       </div>
-      <div class="cue-step"><span class="cue-time">0:50</span> <span class="say">"At camera, scan Pass QR → bind to geometry. Identity is Pass, not biometrics."</span>
-        <div class="do">Mac: hold Pass QR to camera (auto-scans) or tap a face · PUBLIC flips to allow ≤1s. Pass chip shows "Linked to Camera".</div>
-      </div>
-      <div class="cue-step"><span class="cue-time">1:20</span> <span class="say">“Capture once. Rights travel with the media.”</span>
-        <div class="do">Mac: <strong>Capture clip</strong>.</div>
-      </div>
-      <div class="cue-step"><span class="cue-time">1:40</span> <span class="say">“Organizer changes promo policy — re-export is blocked or allowed with a receipt.”</span>
-        <div class="do">iPad: Deny promo → re-export · then Allow promo → re-export · show receipts / graph. Optional: <strong>Explain</strong> (Crusoe→OpenRouter), <strong>Consent brief</strong>, <strong>Judge panel</strong>.</div>
-      </div>
-      <div class="cue-step"><span class="cue-time">2:20</span> <span class="say">“Revoke and the live view goes deny — consent isn’t one-and-done.”</span>
-        <div class="do">iPad: <strong>Revoke impact</strong> preview · then Revoke · PUBLIC → deny. Anomaly strip flags revoked-with-clips.</div>
-      </div>
-      <div class="cue-step"><span class="cue-time">2:40</span> <span class="say">“Beachhead: conference / venue organizers. Capture Enforcement SDK + Media Rights Graph — Neo4j when available, memory fallback for the live demo.”</span>
-        <div class="do">One sentence ask: event pilot vs multi-venue rollout. Console chip shows Rights graph · Neo4j.</div>
-      </div>
-      <div class="cue-step"><span class="cue-time">3:10</span> <span class="say">"We also bootstrapped Fabric — an orchestration control plane for agent engineering. Scroll down for the ~45s Fabric close."</span>
-        <div class="do">Optional: briefly mention FACTORY-BOOTSTRAP proof if there's interest.</div>
-      </div>
-      <div class="cue-step"><span class="cue-time">3:50</span> <span class="say">Close: “Policy layer for cameras + control plane for agents. Who wants a pilot?”</span></div>
-    </div>
-
-    <div class="card stack">
-      <span class="section-label">Stack roles</span>
-      <h2>Neo4j · Crusoe · OpenRouter</h2>
-      <ul class="cue-list small">
-        <li><strong>Neo4j</strong> — Media Rights Graph (Person/Pass/Clip + CAPTURED/EXPORTED); memory fallback if down.</li>
-        <li><strong>Crusoe</strong> — primary LLM for Explain, Consent brief, Revoke impact narrative (fast flash model).</li>
-        <li><strong>OpenRouter</strong> — fallback if Crusoe fails; multi-model <strong>Judge panel</strong> in parallel.</li>
-      </ul>
-    </div>
-
-    <div class="card stack">
-      <span class="section-label">Judge Q&A</span>
-      <h2>Common questions</h2>
-      <ul class="cue-list small">
-        <li><strong>"Is that face AI / biometric ID?"</strong> — No. Phone is the Pass (QR credential). Station enrolls Pass → face geometry (MediaPipe detection, not recognition). Unbound faces → public blur. Identity = Pass bind, not face database.</li>
-        <li><strong>"How do crowds work?"</strong> — Each person needs their own Pass (2nd phone or Console Issue). Camera auto-scans each QR → binds to best unbound face. One Pass per person.</li>
-        <li><strong>"What if they leave and come back?"</strong> — Face tracker (geometry) follows in-frame. Pass stays bound per-person for that session. Revoke Pass → instant deny for that person.</li>
-      </ul>
-    </div>
-
-    <div id="fabric" class="card stack">
-      <span class="section-label">Fabric · ~45s close</span>
-      <h2>Control plane for agent orchestration</h2>
-      <div class="cue-step"><span class="cue-time">0:00</span> <span class="say">"We bootstrapped Fabric — orchestration control plane for multi-agent engineering. Forge coordinates specialists with contracts and deterministic gates."</span>
-        <div class="do">One sentence: not another IDE, it's above coding agents.</div>
-      </div>
-      <div class="cue-step"><span class="cue-time">0:25</span> <span class="say">"Proof: FACTORY-BOOTSTRAP mission — TypeScript estate with Control Room, roles (Atlas/Pact/Workers/Sentinel), verification gates → READY_TO_MERGE."</span>
-        <div class="do">Show FACTORY-BOOTSTRAP impact if available. Close: "Policy layer for cameras + control plane for agents."</div>
+      <div class="nav-row">
+        <button class="btn" onclick="prevBeat()" id="prevBtn">← Prev</button>
+        <button class="btn primary" onclick="nextBeat()" id="nextBtn">Next →</button>
       </div>
     </div>
 
-    <div class="card stack">
-      <span class="section-label">Fabric Q&A (if time)</span>
-      <h2>Quick answers</h2>
-      <ul class="cue-list small">
-        <li><strong>What's bootstrapped?</strong> Control Room + role protocol (Atlas/Pact/Worker-*/Sentinel) + synthetic estate for V0 proof.</li>
-        <li><strong>Built all of Veil with it?</strong> No — Fabric built Software Factory bootstrap. Veil was mostly Forge-direct.</li>
-      </ul>
+    <div class="beat-display">
+      <div class="beat-card" id="beatCard">
+        <div class="beat-target" id="beatTarget">TARGET 0:00</div>
+        <h2 class="beat-title" id="beatTitle">Click Start to begin</h2>
+        <div class="beat-talk" id="beatTalk"></div>
+        <div id="beatAction"></div>
+      </div>
     </div>
 
-    <p class="small muted">LAN Pass/Console: use the IP printed in the Terminal window · Camera prefers <code>localhost</code>.</p>
+    <div class="qa-section">
+      <div class="card">
+        <div class="qa-toggle" onclick="toggleQA('prep')">
+          <h3>Setup · Before you start</h3>
+        </div>
+        <div class="qa-content" id="qa-prep">
+          <ol class="cue-list small">
+            <li>Mac Terminal: Veil server running · keep that window open</li>
+            <li>Console → <strong>Start clean demo</strong> (or Wipe everything)</li>
+            <li>Mac <code>/camera</code> · iPhone <code>/pass</code> · iPad <code>/console</code> · this tab <code>/cue</code></li>
+            <li>QR scanning is automatic when camera is live (or drag INTERNAL box onto your face)</li>
+          </ol>
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-section">
+      <div class="card">
+        <div class="qa-toggle" onclick="toggleQA('stack')">
+          <h3>Stack · Neo4j · Crusoe · OpenRouter</h3>
+        </div>
+        <div class="qa-content" id="qa-stack">
+          <ul class="cue-list small">
+            <li><strong>Neo4j</strong> — Media Rights Graph (Person/Pass/Clip + CAPTURED/EXPORTED); memory fallback if down.</li>
+            <li><strong>Crusoe</strong> — primary LLM for Explain, Consent brief, Revoke impact narrative (fast flash model).</li>
+            <li><strong>OpenRouter</strong> — fallback if Crusoe fails; multi-model <strong>Judge panel</strong> in parallel.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-section">
+      <div class="card">
+        <div class="qa-toggle" onclick="toggleQA('veil-qa')">
+          <h3>Judge Q&A · Veil</h3>
+        </div>
+        <div class="qa-content" id="qa-veil-qa">
+          <ul class="cue-list small">
+            <li><strong>"Is that face AI / biometric ID?"</strong> — No. Phone is the Pass (QR credential). Station enrolls Pass → face geometry (MediaPipe detection, not recognition). Unbound faces → public blur. Identity = Pass bind, not face database.</li>
+            <li><strong>"How do crowds work?"</strong> — Each person needs their own Pass (2nd phone or Console Issue). Camera auto-scans each QR → binds to best unbound face. One Pass per person.</li>
+            <li><strong>"What if they leave and come back?"</strong> — Face tracker (geometry) follows in-frame. Pass stays bound per-person for that session. Revoke Pass → instant deny for that person.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="qa-section">
+      <div class="card">
+        <div class="qa-toggle" onclick="toggleQA('fabric-qa')">
+          <h3>Judge Q&A · Fabric</h3>
+        </div>
+        <div class="qa-content" id="qa-fabric-qa">
+          <ul class="cue-list small">
+            <li><strong>Why not just Cursor/Copilot?</strong> Cross-service orchestration + contracts + gates.</li>
+            <li><strong>Is Sentinel an LLM?</strong> No — deterministic validators.</li>
+            <li><strong>What's bootstrapped?</strong> FACTORY-BOOTSTRAP-001 + protocol V0.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <p class="small muted" style="margin-top: 2rem;">LAN Pass/Console: use the IP printed in the Terminal window · Camera prefers <code>localhost</code>.</p>
   </div>
+
+  <script>
+    const BEATS = [
+      {
+        block: 'VEIL',
+        target: '0:00',
+        targetSeconds: 0,
+        title: 'Problem · Cameras capture by default',
+        talk: [
+          'Cameras capture by default. Veil makes consent programmable.'
+        ],
+        action: 'Point at dual panes — INTERNAL clear, PUBLIC already blurring Unknown.',
+        visual: `<svg viewBox="0 0 800 280" xmlns="http://www.w3.org/2000/svg" style="max-width: 700px;">
+          <text x="100" y="40" fill="#8b9bb4" font-size="16" font-weight="700" text-anchor="middle">BEFORE</text>
+          <rect x="20" y="60" width="160" height="180" rx="8" fill="#0c121c" stroke="rgba(244, 63, 94, 0.4)" stroke-width="2"/>
+          <text x="100" y="90" fill="#e8eef8" font-size="14" font-weight="600" text-anchor="middle">📹 Camera</text>
+          <text x="100" y="130" fill="#fda4af" font-size="13" text-anchor="middle">Captures</text>
+          <text x="100" y="150" fill="#fda4af" font-size="13" text-anchor="middle">Everyone</text>
+          <text x="100" y="170" fill="#fda4af" font-size="13" text-anchor="middle">By Default</text>
+          <circle cx="60" cy="200" r="18" fill="#f43f5e" opacity="0.3"/>
+          <circle cx="100" cy="200" r="18" fill="#f43f5e" opacity="0.3"/>
+          <circle cx="140" cy="200" r="18" fill="#f43f5e" opacity="0.3"/>
+          <text x="100" y="230" fill="#f43f5e" font-size="11" font-weight="700" text-anchor="middle">NO CONTROL</text>
+          
+          <path d="M 200 150 L 280 150" stroke="#38bdf8" stroke-width="3" marker-end="url(#arrowBlue)"/>
+          <text x="240" y="145" fill="#38bdf8" font-size="14" font-weight="700" text-anchor="middle">VEIL</text>
+          
+          <text x="480" y="40" fill="#8b9bb4" font-size="16" font-weight="700" text-anchor="middle">AFTER</text>
+          <rect x="300" y="60" width="360" height="180" rx="8" fill="#0c121c" stroke="rgba(52, 211, 153, 0.4)" stroke-width="2"/>
+          <text x="480" y="90" fill="#e8eef8" font-size="14" font-weight="600" text-anchor="middle">📹 Veil Camera</text>
+          <text x="480" y="120" fill="#34d399" font-size="13" text-anchor="middle">Programmable Consent</text>
+          
+          <g transform="translate(340, 145)">
+            <circle r="16" fill="rgba(52, 211, 153, 0.2)" stroke="#34d399" stroke-width="2"/>
+            <text y="5" fill="#34d399" font-size="18" text-anchor="middle">✓</text>
+            <text y="35" fill="#34d399" font-size="10" text-anchor="middle">Pass</text>
+          </g>
+          
+          <g transform="translate(420, 145)">
+            <circle r="16" fill="rgba(251, 191, 36, 0.2)" stroke="#fbbf24" stroke-width="2"/>
+            <text y="5" fill="#fbbf24" font-size="18" text-anchor="middle">●</text>
+            <text y="35" fill="#fbbf24" font-size="10" text-anchor="middle">Blur</text>
+          </g>
+          
+          <g transform="translate(500, 145)">
+            <circle r="16" fill="rgba(244, 63, 94, 0.2)" stroke="#f43f5e" stroke-width="2"/>
+            <text y="5" fill="#f43f5e" font-size="18" text-anchor="middle">✗</text>
+            <text y="35" fill="#f43f5e" font-size="10" text-anchor="middle">Deny</text>
+          </g>
+          
+          <g transform="translate(580, 145)">
+            <circle r="16" fill="rgba(56, 189, 248, 0.2)" stroke="#38bdf8" stroke-width="2"/>
+            <text y="5" fill="#38bdf8" font-size="18" text-anchor="middle">↻</text>
+            <text y="35" fill="#38bdf8" font-size="10" text-anchor="middle">Revoke</text>
+          </g>
+          
+          <text x="480" y="220" fill="#34d399" font-size="11" font-weight="700" text-anchor="middle">IDENTITY-DRIVEN POLICY</text>
+          
+          <defs>
+            <marker id="arrowBlue" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto" markerUnits="strokeWidth">
+              <path d="M0,0 L0,6 L9,3 z" fill="#38bdf8"/>
+            </marker>
+          </defs>
+        </svg>`
+      },
+      {
+        block: 'VEIL',
+        target: '0:40',
+        targetSeconds: 40,
+        title: 'Pass · Consent credential',
+        talk: [
+          'Attendee issues a Veil Pass — a short-lived credential, not a face ID.'
+        ],
+        action: 'iPhone: Pass shows · tap Allow.'
+      },
+      {
+        block: 'VEIL',
+        target: '1:10',
+        targetSeconds: 70,
+        title: 'Camera bind · Scan QR or tap face',
+        talk: [
+          'At camera, scan Pass QR → bind to geometry.',
+          'Identity is Pass, not biometrics.'
+        ],
+        action: 'Hold Pass QR to camera (auto-scans) or tap a face · PUBLIC flips to allow ≤1s. Pass chip shows "Linked to Camera".'
+      },
+      {
+        block: 'VEIL',
+        target: '2:00',
+        targetSeconds: 120,
+        title: 'Capture · INTERNAL vs PUBLIC enforcement',
+        talk: [
+          'Capture once. Rights travel with the media.',
+          'INTERNAL shows all. PUBLIC enforces consent policies.'
+        ],
+        action: 'Mac: Capture clip. Note dual enforcement in real-time.'
+      },
+      {
+        block: 'VEIL',
+        target: '2:40',
+        targetSeconds: 160,
+        title: 'Console · Marketing policy control',
+        talk: [
+          'Organizer changes promo policy in Console.',
+          'Re-export is blocked or allowed with a receipt.'
+        ],
+        action: 'iPad: Deny promo → re-export (blocked) · then Allow promo → re-export (with receipt). Show receipts / graph. Optional: Explain (Crusoe→OpenRouter), Consent brief, Judge panel.'
+      },
+      {
+        block: 'VEIL',
+        target: '3:30',
+        targetSeconds: 210,
+        title: 'Revoke · Dynamic consent',
+        talk: [
+          'Revoke and the live view goes deny.',
+          'Consent isn\'t one-and-done — it\'s continuous.'
+        ],
+        action: 'iPad: Revoke impact preview · then Revoke · PUBLIC → deny. Anomaly strip flags revoked-with-clips.'
+      },
+      {
+        block: 'VEIL',
+        target: '4:00',
+        targetSeconds: 240,
+        title: 'Beachhead · Conference & venue organizers',
+        talk: [
+          'Capture Enforcement SDK + Media Rights Graph.',
+          'Neo4j when available, memory fallback for live demo.'
+        ],
+        action: 'One sentence ask: event pilot vs multi-venue rollout. Console chip shows Rights graph · Neo4j.',
+        visual: `<svg viewBox="0 0 900 400" xmlns="http://www.w3.org/2000/svg" style="max-width: 800px;">
+          <text x="450" y="30" fill="#38bdf8" font-size="20" font-weight="700" text-anchor="middle">VEIL PROCESS FLOW</text>
+          
+          <!-- Pass -->
+          <g transform="translate(50, 80)">
+            <rect width="140" height="100" rx="8" fill="#0c121c" stroke="#38bdf8" stroke-width="2"/>
+            <text x="70" y="30" fill="#e8eef8" font-size="16" font-weight="700" text-anchor="middle">📱 Pass</text>
+            <text x="70" y="55" fill="#8b9bb4" font-size="12" text-anchor="middle">QR Credential</text>
+            <text x="70" y="75" fill="#8b9bb4" font-size="11" text-anchor="middle">Short-lived</text>
+            <text x="70" y="90" fill="#8b9bb4" font-size="11" text-anchor="middle">Identity Proof</text>
+          </g>
+          
+          <!-- Arrow 1 -->
+          <path d="M 200 130 L 260 130" stroke="#38bdf8" stroke-width="3" marker-end="url(#arrow1)"/>
+          <text x="230" y="120" fill="#38bdf8" font-size="11" font-weight="600" text-anchor="middle">scan</text>
+          
+          <!-- Bind -->
+          <g transform="translate(270, 80)">
+            <rect width="140" height="100" rx="8" fill="#0c121c" stroke="#34d399" stroke-width="2"/>
+            <text x="70" y="30" fill="#e8eef8" font-size="16" font-weight="700" text-anchor="middle">🔗 Bind</text>
+            <text x="70" y="55" fill="#8b9bb4" font-size="12" text-anchor="middle">Pass → Face</text>
+            <text x="70" y="75" fill="#8b9bb4" font-size="11" text-anchor="middle">Geometry Only</text>
+            <text x="70" y="90" fill="#8b9bb4" font-size="11" text-anchor="middle">No Biometrics</text>
+          </g>
+          
+          <!-- Arrow 2 -->
+          <path d="M 420 130 L 480 130" stroke="#34d399" stroke-width="3" marker-end="url(#arrow2)"/>
+          <text x="450" y="120" fill="#34d399" font-size="11" font-weight="600" text-anchor="middle">bind</text>
+          
+          <!-- Capture -->
+          <g transform="translate(490, 80)">
+            <rect width="140" height="100" rx="8" fill="#0c121c" stroke="#6366f1" stroke-width="2"/>
+            <text x="70" y="30" fill="#e8eef8" font-size="16" font-weight="700" text-anchor="middle">📹 Capture</text>
+            <text x="70" y="55" fill="#8b9bb4" font-size="12" text-anchor="middle">Real-time</text>
+            <text x="70" y="75" fill="#8b9bb4" font-size="11" text-anchor="middle">INTERNAL clear</text>
+            <text x="70" y="90" fill="#8b9bb4" font-size="11" text-anchor="middle">PUBLIC enforced</text>
+          </g>
+          
+          <!-- Arrow 3 -->
+          <path d="M 710 130 L 770 130" stroke="#6366f1" stroke-width="3" marker-end="url(#arrow3)"/>
+          <text x="740" y="120" fill="#6366f1" font-size="11" font-weight="600" text-anchor="middle">track</text>
+          
+          <!-- Media Rights Graph -->
+          <g transform="translate(780, 60)">
+            <rect width="100" height="140" rx="8" fill="#0c121c" stroke="#a78bfa" stroke-width="2"/>
+            <text x="50" y="30" fill="#e8eef8" font-size="14" font-weight="700" text-anchor="middle">🗄️ Rights</text>
+            <text x="50" y="48" fill="#e8eef8" font-size="14" font-weight="700" text-anchor="middle">Graph</text>
+            <text x="50" y="75" fill="#8b9bb4" font-size="10" text-anchor="middle">Neo4j</text>
+            <text x="50" y="95" fill="#8b9bb4" font-size="9" text-anchor="middle">Person</text>
+            <text x="50" y="108" fill="#8b9bb4" font-size="9" text-anchor="middle">Pass</text>
+            <text x="50" y="121" fill="#8b9bb4" font-size="9" text-anchor="middle">Clip</text>
+          </g>
+          
+          <!-- Marketing / Export Policy -->
+          <g transform="translate(270, 250)">
+            <rect width="360" height="100" rx="8" fill="rgba(56, 189, 248, 0.1)" stroke="#38bdf8" stroke-width="2"/>
+            <text x="180" y="30" fill="#e8eef8" font-size="16" font-weight="700" text-anchor="middle">Policy Enforcement</text>
+            
+            <g transform="translate(30, 50)">
+              <circle r="14" fill="rgba(52, 211, 153, 0.2)" stroke="#34d399" stroke-width="2"/>
+              <text y="5" fill="#34d399" font-size="16" text-anchor="middle">✓</text>
+              <text y="35" fill="#34d399" font-size="10" text-anchor="middle">Allow</text>
+            </g>
+            
+            <g transform="translate(120, 50)">
+              <circle r="14" fill="rgba(251, 191, 36, 0.2)" stroke="#fbbf24" stroke-width="2"/>
+              <text y="5" fill="#fbbf24" font-size="16" text-anchor="middle">🔄</text>
+              <text y="35" fill="#fbbf24" font-size="10" text-anchor="middle">Transform</text>
+            </g>
+            
+            <g transform="translate(210, 50)">
+              <circle r="14" fill="rgba(244, 63, 94, 0.2)" stroke="#f43f5e" stroke-width="2"/>
+              <text y="5" fill="#f43f5e" font-size="16" text-anchor="middle">🚫</text>
+              <text y="35" fill="#f43f5e" font-size="10" text-anchor="middle">Block</text>
+            </g>
+            
+            <g transform="translate(300, 50)">
+              <circle r="14" fill="rgba(56, 189, 248, 0.2)" stroke="#38bdf8" stroke-width="2"/>
+              <text y="5" fill="#38bdf8" font-size="16" text-anchor="middle">↻</text>
+              <text y="35" fill="#38bdf8" font-size="10" text-anchor="middle">Revoke</text>
+            </g>
+          </g>
+          
+          <!-- Arrow from graph to policies -->
+          <path d="M 830 210 L 830 240 L 450 240" stroke="#a78bfa" stroke-width="2" stroke-dasharray="4,4" marker-end="url(#arrow4)"/>
+          
+          <defs>
+            <marker id="arrow1" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+              <path d="M0,0 L0,6 L9,3 z" fill="#38bdf8"/>
+            </marker>
+            <marker id="arrow2" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+              <path d="M0,0 L0,6 L9,3 z" fill="#34d399"/>
+            </marker>
+            <marker id="arrow3" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+              <path d="M0,0 L0,6 L9,3 z" fill="#6366f1"/>
+            </marker>
+            <marker id="arrow4" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+              <path d="M0,0 L0,6 L9,3 z" fill="#a78bfa"/>
+            </marker>
+          </defs>
+        </svg>`
+      },
+      {
+        block: 'FABRIC',
+        target: '4:00',
+        targetSeconds: 240,
+        title: 'Fabric · Agentic engineering control plane',
+        talk: [
+          'Veil is the product. Fabric is how we ship multi-service change safely.'
+        ],
+        action: null
+      },
+      {
+        block: 'FABRIC',
+        target: '4:10',
+        targetSeconds: 250,
+        title: 'Architecture · Not another IDE',
+        talk: [
+          'Agentic engineering control plane above coding agents.',
+          'Architecture + contracts + dynamic teams + deterministic gates.'
+        ],
+        action: null
+      },
+      {
+        block: 'FABRIC',
+        target: '4:20',
+        targetSeconds: 260,
+        title: 'Roles · Orchestration hierarchy',
+        talk: [
+          'Forge orchestrates · Atlas impact · Pact contracts · Worker-* implement.',
+          'Sentinel verifies — never implements.'
+        ],
+        action: null,
+        visual: `<svg viewBox="0 0 700 450" xmlns="http://www.w3.org/2000/svg" style="max-width: 650px;">
+          <text x="350" y="30" fill="#a78bfa" font-size="20" font-weight="700" text-anchor="middle">FABRIC ARCHITECTURE</text>
+          
+          <!-- Forge (Top) -->
+          <g transform="translate(250, 60)">
+            <rect width="200" height="70" rx="10" fill="rgba(167, 139, 250, 0.15)" stroke="#a78bfa" stroke-width="3"/>
+            <text x="100" y="30" fill="#e8eef8" font-size="18" font-weight="700" text-anchor="middle">⚙️ FORGE</text>
+            <text x="100" y="52" fill="#a78bfa" font-size="12" text-anchor="middle">Orchestration Control Plane</text>
+          </g>
+          
+          <!-- Arrow down -->
+          <path d="M 350 140 L 350 170" stroke="#a78bfa" stroke-width="3" marker-end="url(#arrowFabric)"/>
+          
+          <!-- Atlas & Pact (Middle tier) -->
+          <g transform="translate(80, 180)">
+            <rect width="160" height="70" rx="8" fill="rgba(56, 189, 248, 0.12)" stroke="#38bdf8" stroke-width="2"/>
+            <text x="80" y="28" fill="#e8eef8" font-size="16" font-weight="700" text-anchor="middle">📊 ATLAS</text>
+            <text x="80" y="48" fill="#38bdf8" font-size="11" text-anchor="middle">Impact Analysis</text>
+            <text x="80" y="62" fill="#8b9bb4" font-size="10" text-anchor="middle">Cross-service deps</text>
+          </g>
+          
+          <g transform="translate(260, 180)">
+            <rect width="160" height="70" rx="8" fill="rgba(56, 189, 248, 0.12)" stroke="#38bdf8" stroke-width="2"/>
+            <text x="80" y="28" fill="#e8eef8" font-size="16" font-weight="700" text-anchor="middle">📜 PACT</text>
+            <text x="80" y="48" fill="#38bdf8" font-size="11" text-anchor="middle">Contract Generator</text>
+            <text x="80" y="62" fill="#8b9bb4" font-size="10" text-anchor="middle">Interface specs</text>
+          </g>
+          
+          <g transform="translate(440, 180)">
+            <rect width="160" height="70" rx="8" fill="rgba(56, 189, 248, 0.12)" stroke="#38bdf8" stroke-width="2"/>
+            <text x="80" y="28" fill="#e8eef8" font-size="16" font-weight="700" text-anchor="middle">👁️ SENTINEL</text>
+            <text x="80" y="48" fill="#38bdf8" font-size="11" text-anchor="middle">Gate Verification</text>
+            <text x="80" y="62" fill="#8b9bb4" font-size="10" text-anchor="middle">Never implements</text>
+          </g>
+          
+          <!-- Arrows to workers -->
+          <path d="M 160 260 L 160 300" stroke="#34d399" stroke-width="2" marker-end="url(#arrowWork)"/>
+          <path d="M 340 260 L 340 300" stroke="#34d399" stroke-width="2" marker-end="url(#arrowWork)"/>
+          <path d="M 520 260 L 520 300" stroke="#34d399" stroke-width="2" marker-end="url(#arrowWork)"/>
+          
+          <!-- Workers (Bottom tier) -->
+          <g transform="translate(50, 310)">
+            <rect width="140" height="60" rx="6" fill="rgba(52, 211, 153, 0.12)" stroke="#34d399" stroke-width="2"/>
+            <text x="70" y="25" fill="#e8eef8" font-size="14" font-weight="600" text-anchor="middle">Worker-Profile</text>
+            <text x="70" y="45" fill="#34d399" font-size="10" text-anchor="middle">Scoped implementation</text>
+          </g>
+          
+          <g transform="translate(210, 310)">
+            <rect width="140" height="60" rx="6" fill="rgba(52, 211, 153, 0.12)" stroke="#34d399" stroke-width="2"/>
+            <text x="70" y="25" fill="#e8eef8" font-size="14" font-weight="600" text-anchor="middle">Worker-Notify</text>
+            <text x="70" y="45" fill="#34d399" font-size="10" text-anchor="middle">Scoped implementation</text>
+          </g>
+          
+          <g transform="translate(370, 310)">
+            <rect width="140" height="60" rx="6" fill="rgba(52, 211, 153, 0.12)" stroke="#34d399" stroke-width="2"/>
+            <text x="70" y="25" fill="#e8eef8" font-size="14" font-weight="600" text-anchor="middle">Worker-Audit</text>
+            <text x="70" y="45" fill="#34d399" font-size="10" text-anchor="middle">Scoped implementation</text>
+          </g>
+          
+          <g transform="translate(530, 310)">
+            <rect width="140" height="60" rx="6" fill="rgba(52, 211, 153, 0.12)" stroke="#34d399" stroke-width="2"/>
+            <text x="70" y="25" fill="#e8eef8" font-size="14" font-weight="600" text-anchor="middle">Worker-*</text>
+            <text x="70" y="45" fill="#34d399" font-size="10" text-anchor="middle">Dynamic teams</text>
+          </g>
+          
+          <!-- Gates (Bottom) -->
+          <g transform="translate(200, 390)">
+            <rect width="300" height="50" rx="8" fill="rgba(99, 102, 241, 0.15)" stroke="#6366f1" stroke-width="2"/>
+            <text x="150" y="22" fill="#e8eef8" font-size="14" font-weight="700" text-anchor="middle">🛡️ Deterministic Gates</text>
+            <text x="150" y="38" fill="#6366f1" font-size="11" text-anchor="middle">READY_TO_MERGE · No LLM judgment</text>
+          </g>
+          
+          <defs>
+            <marker id="arrowFabric" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+              <path d="M0,0 L0,6 L9,3 z" fill="#a78bfa"/>
+            </marker>
+            <marker id="arrowWork" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+              <path d="M0,0 L0,6 L9,3 z" fill="#34d399"/>
+            </marker>
+          </defs>
+        </svg>`
+      },
+      {
+        block: 'FABRIC',
+        target: '4:35',
+        targetSeconds: 275,
+        title: 'Lifecycle · Gate-driven workflow',
+        talk: [
+          'Impact → contracts → scoped workers → Sentinel gates → READY_TO_MERGE.',
+          'LLM narrative is never a gate result.'
+        ],
+        action: null,
+        visual: `<svg viewBox="0 0 900 280" xmlns="http://www.w3.org/2000/svg" style="max-width: 850px;">
+          <text x="450" y="30" fill="#a78bfa" font-size="20" font-weight="700" text-anchor="middle">FABRIC LIFECYCLE</text>
+          
+          <!-- Impact -->
+          <g transform="translate(30, 70)">
+            <rect width="140" height="90" rx="8" fill="rgba(56, 189, 248, 0.12)" stroke="#38bdf8" stroke-width="2"/>
+            <text x="70" y="28" fill="#e8eef8" font-size="16" font-weight="700" text-anchor="middle">1. Impact</text>
+            <text x="70" y="50" fill="#8b9bb4" font-size="12" text-anchor="middle">Atlas</text>
+            <text x="70" y="68" fill="#8b9bb4" font-size="11" text-anchor="middle">Cross-service</text>
+            <text x="70" y="82" fill="#8b9bb4" font-size="11" text-anchor="middle">analysis</text>
+          </g>
+          
+          <path d="M 180 115 L 210 115" stroke="#38bdf8" stroke-width="3" marker-end="url(#arrowLC1)"/>
+          
+          <!-- Contracts -->
+          <g transform="translate(220, 70)">
+            <rect width="140" height="90" rx="8" fill="rgba(52, 211, 153, 0.12)" stroke="#34d399" stroke-width="2"/>
+            <text x="70" y="28" fill="#e8eef8" font-size="16" font-weight="700" text-anchor="middle">2. Contracts</text>
+            <text x="70" y="50" fill="#8b9bb4" font-size="12" text-anchor="middle">Pact</text>
+            <text x="70" y="68" fill="#8b9bb4" font-size="11" text-anchor="middle">Interface</text>
+            <text x="70" y="82" fill="#8b9bb4" font-size="11" text-anchor="middle">specs</text>
+          </g>
+          
+          <path d="M 370 115 L 400 115" stroke="#34d399" stroke-width="3" marker-end="url(#arrowLC2)"/>
+          
+          <!-- Workers -->
+          <g transform="translate(410, 70)">
+            <rect width="140" height="90" rx="8" fill="rgba(251, 191, 36, 0.12)" stroke="#fbbf24" stroke-width="2"/>
+            <text x="70" y="28" fill="#e8eef8" font-size="16" font-weight="700" text-anchor="middle">3. Workers</text>
+            <text x="70" y="50" fill="#8b9bb4" font-size="12" text-anchor="middle">Worker-*</text>
+            <text x="70" y="68" fill="#8b9bb4" font-size="11" text-anchor="middle">Scoped</text>
+            <text x="70" y="82" fill="#8b9bb4" font-size="11" text-anchor="middle">implementation</text>
+          </g>
+          
+          <path d="M 560 115 L 590 115" stroke="#fbbf24" stroke-width="3" marker-end="url(#arrowLC3)"/>
+          
+          <!-- Sentinel Gates -->
+          <g transform="translate(600, 70)">
+            <rect width="140" height="90" rx="8" fill="rgba(99, 102, 241, 0.12)" stroke="#6366f1" stroke-width="2"/>
+            <text x="70" y="28" fill="#e8eef8" font-size="16" font-weight="700" text-anchor="middle">4. Gates</text>
+            <text x="70" y="50" fill="#8b9bb4" font-size="12" text-anchor="middle">Sentinel</text>
+            <text x="70" y="68" fill="#8b9bb4" font-size="11" text-anchor="middle">Deterministic</text>
+            <text x="70" y="82" fill="#8b9bb4" font-size="11" text-anchor="middle">verification</text>
+          </g>
+          
+          <path d="M 750 115 L 780 115" stroke="#6366f1" stroke-width="3" marker-end="url(#arrowLC4)"/>
+          
+          <!-- Ready to Merge -->
+          <g transform="translate(790, 70)">
+            <circle cx="50" cy="45" r="42" fill="rgba(52, 211, 153, 0.2)" stroke="#34d399" stroke-width="3"/>
+            <text x="50" y="35" fill="#34d399" font-size="24" font-weight="700" text-anchor="middle">✓</text>
+            <text x="50" y="60" fill="#34d399" font-size="12" font-weight="700" text-anchor="middle">READY</text>
+          </g>
+          
+          <!-- Key principle -->
+          <g transform="translate(50, 190)">
+            <rect width="800" height="70" rx="8" fill="rgba(167, 139, 250, 0.08)" stroke="#a78bfa" stroke-width="2" stroke-dasharray="6,4"/>
+            <text x="400" y="30" fill="#e8eef8" font-size="16" font-weight="700" text-anchor="middle">🔒 Key Principle</text>
+            <text x="400" y="52" fill="#a78bfa" font-size="13" text-anchor="middle">LLM narrative is NEVER a gate result · Gates are deterministic validators</text>
+          </g>
+          
+          <defs>
+            <marker id="arrowLC1" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+              <path d="M0,0 L0,6 L9,3 z" fill="#38bdf8"/>
+            </marker>
+            <marker id="arrowLC2" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+              <path d="M0,0 L0,6 L9,3 z" fill="#34d399"/>
+            </marker>
+            <marker id="arrowLC3" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+              <path d="M0,0 L0,6 L9,3 z" fill="#fbbf24"/>
+            </marker>
+            <marker id="arrowLC4" markerWidth="10" markerHeight="10" refX="8" refY="3" orient="auto">
+              <path d="M0,0 L0,6 L9,3 z" fill="#6366f1"/>
+            </marker>
+          </defs>
+        </svg>`
+      },
+      {
+        block: 'FABRIC',
+        target: '4:50',
+        targetSeconds: 290,
+        title: 'Proof · FACTORY-BOOTSTRAP',
+        talk: [
+          'FACTORY-BOOTSTRAP-001 synthetic TypeScript estate (profile, notify, audit, sdk, gateway).',
+          'Verification PASS, READY_TO_MERGE. Policy layer for cameras + control plane for agents.'
+        ],
+        action: null
+      }
+    ];
+
+    let currentBeat = 0;
+    let timerInterval = null;
+    let elapsedSeconds = 0;
+    let timerRunning = false;
+
+    function formatTime(seconds) {
+      const mins = Math.floor(seconds / 60);
+      const secs = seconds % 60;
+      return `${mins}:${secs.toString().padStart(2, '0')}`;
+    }
+
+    function updateBeatDisplay() {
+      const beat = BEATS[currentBeat];
+      const beatCard = document.getElementById('beatCard');
+      const blockIndicator = document.getElementById('blockIndicator');
+      
+      beatCard.className = beat.block === 'FABRIC' ? 'beat-card fabric' : 'beat-card';
+      blockIndicator.className = beat.block === 'FABRIC' ? 'progress-block fabric' : 'progress-block';
+      blockIndicator.textContent = beat.block;
+      
+      document.getElementById('beatTarget').textContent = `TARGET ${beat.target}`;
+      document.getElementById('beatTitle').textContent = beat.title;
+      document.getElementById('beatProgress').textContent = `Beat ${currentBeat + 1} of ${BEATS.length}`;
+      
+      const talkHTML = beat.talk.map(line => 
+        `<div class="beat-talk-line">"${line}"</div>`
+      ).join('');
+      document.getElementById('beatTalk').innerHTML = talkHTML;
+      
+      const visualHTML = beat.visual
+        ? `<div class="beat-visual">${beat.visual}</div>`
+        : '';
+      
+      const actionHTML = beat.action 
+        ? `<div class="beat-action">
+             <div class="beat-action-label">Do Now</div>
+             <div class="beat-action-text">${beat.action}</div>
+           </div>`
+        : '';
+      document.getElementById('beatAction').innerHTML = visualHTML + actionHTML;
+      
+      document.getElementById('prevBtn').disabled = currentBeat === 0;
+      document.getElementById('nextBtn').disabled = currentBeat === BEATS.length - 1;
+    }
+
+    function nextBeat() {
+      if (currentBeat < BEATS.length - 1) {
+        currentBeat++;
+        updateBeatDisplay();
+      }
+    }
+
+    function prevBeat() {
+      if (currentBeat > 0) {
+        currentBeat--;
+        updateBeatDisplay();
+      }
+    }
+
+    function startTimer() {
+      if (!timerRunning) {
+        timerRunning = true;
+        document.getElementById('timer').classList.add('running');
+        document.getElementById('startBtn').textContent = 'Pause';
+        document.getElementById('startBtn').className = 'btn warn';
+        
+        timerInterval = setInterval(() => {
+          elapsedSeconds++;
+          document.getElementById('timer').textContent = formatTime(elapsedSeconds);
+        }, 1000);
+      } else {
+        pauseTimer();
+      }
+    }
+
+    function pauseTimer() {
+      timerRunning = false;
+      clearInterval(timerInterval);
+      document.getElementById('timer').classList.remove('running');
+      document.getElementById('startBtn').textContent = 'Resume';
+      document.getElementById('startBtn').className = 'btn good';
+    }
+
+    function resetTimer() {
+      pauseTimer();
+      elapsedSeconds = 0;
+      currentBeat = 0;
+      document.getElementById('timer').textContent = formatTime(elapsedSeconds);
+      document.getElementById('startBtn').textContent = 'Start';
+      document.getElementById('startBtn').className = 'btn good';
+      updateBeatDisplay();
+    }
+
+    function toggleQA(section) {
+      const toggle = document.querySelector(`#qa-${section}`).previousElementSibling;
+      const content = document.getElementById(`qa-${section}`);
+      toggle.classList.toggle('open');
+      content.classList.toggle('open');
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+      
+      if (e.key === 'ArrowRight' || e.key === ' ') {
+        e.preventDefault();
+        nextBeat();
+      } else if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        prevBeat();
+      }
+    });
+
+    updateBeatDisplay();
+  </script>
 </body>
 </html>
