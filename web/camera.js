@@ -136,13 +136,18 @@ async function handleQRCode(rawCode) {
   recentBinds.add(tokenId);
   setTimeout(() => recentBinds.delete(tokenId), BIND_DEBOUNCE_MS);
   const banner = document.getElementById("stationBanner");
+  const target = pickBindTarget();
+  if (!target) {
+    banner.textContent = `QR seen (${tokenId.slice(0, 8)}…) — stand in frame to bind`;
+    camStatus.textContent = "Consent Station: QR detected — no valid face in frame. Stand in front of camera.";
+    return;
+  }
   banner.textContent = `Scanned Pass ${tokenId.slice(0, 8)}… — binding…`;
   try {
-    const target = pickBindTarget();
     const res = await fetch(`${API}/bind`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ token_id: tokenId, track_id: target?.id }),
+      body: JSON.stringify({ token_id: tokenId, track_id: target.id }),
     });
     if (!res.ok) {
       const err = await res.json();
@@ -244,7 +249,19 @@ function ensurePoll() {
 }
 
 function pickBindTarget() {
-  const unbound = tracks.filter((t) => !t.token_id);
+  const MIN_FACE_AREA = 150; // ~12×12% minimum (real face, not placeholder)
+  const MAX_MISSES_FOR_BIND = 2; // only bind tracks actively matched by face detection
+  const unbound = tracks.filter((t) => {
+    if (t.token_id) return false; // already bound
+    if ((t.w * t.h) < MIN_FACE_AREA) return false; // too small
+    if (t.manualLock) return true; // manual tracks are eligible
+    // For auto tracks: only bind if actively tracked by face detection (low miss count)
+    // This excludes placeholder "Unknown" tracks that haven't matched a real face
+    if (t.auto && (t.misses === undefined || t.misses > MAX_MISSES_FOR_BIND)) {
+      return false;
+    }
+    return true;
+  });
   if (!unbound.length) return null;
   // Prefer largest face near center (likely the demo speaker)
   return unbound
@@ -701,7 +718,8 @@ async function watchDemoEpoch() {
       } catch {
         /* ignore */
       }
-      addTrack({ label: "Unknown", subject: "unknown", auto: true });
+      const placeholder = addTrack({ label: "Unknown", subject: "unknown", auto: true });
+      placeholder.misses = 99; // exclude from binding until face detection matches it
       camStatus.textContent = "Demo reset — re-seeded; face auto-track will refill.";
       if (stream) startFaceLoop();
     }
@@ -828,7 +846,8 @@ async function runJudgeMode() {
     await fetch(`${API}/demo/prep`, { method: "POST" });
     tracks.length = 0;
     try { sessionStorage.removeItem(BIND_KEY); } catch { /* ignore */ }
-    addTrack({ label: "Unknown", subject: "unknown", auto: true });
+    const placeholder = addTrack({ label: "Unknown", subject: "unknown", auto: true });
+    placeholder.misses = 99; // exclude from binding until face detection matches it
     if (stream) startFaceLoop();
     await sleep(1200);
 
@@ -913,7 +932,9 @@ async function boot() {
   useFallback("Starting camera…");
   await startCamera({ manual: false });
   // Placeholder until faces appear (or manual drag if tracker off)
-  addTrack({ label: "Unknown", subject: "unknown", auto: true });
+  // High initial misses so it's not eligible for binding until matched to a real face
+  const placeholder = addTrack({ label: "Unknown", subject: "unknown", auto: true });
+  placeholder.misses = 99; // exclude from binding until face detection matches it
   camStatus.textContent = stream
     ? "Camera live — starting face auto-track…"
     : "Sample still — add/drag tracks manually.";
