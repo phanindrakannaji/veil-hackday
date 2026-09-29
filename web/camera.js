@@ -52,25 +52,9 @@ const SAMPLE_STILL =
   <text x="480" y="560" text-anchor="middle" fill="#8b9bb0" font-family="sans-serif" font-size="22">Sample still (camera backup)</text>
 </svg>`);
 
-document.getElementById("btnStart").onclick = () => startCamera({ manual: true });
-document.getElementById("btnFallback").onclick = () => useFallback("Sample still selected.");
-document.getElementById("btnAddPerson").onclick = () =>
-  addTrack({ manualLock: true, auto: false, label: "Manual" });
 document.getElementById("btnBindManual").onclick = bindManual;
 document.getElementById("btnCapture").onclick = captureClip;
 document.getElementById("btnJudge").onclick = () => runJudgeMode();
-document.getElementById("btnAutoTrack").onclick = toggleAutoTrack;
-
-function toggleAutoTrack() {
-  autoTrack = !autoTrack;
-  const btn = document.getElementById("btnAutoTrack");
-  btn.textContent = autoTrack ? "Auto-track ON" : "Auto-track OFF";
-  btn.classList.toggle("good", autoTrack);
-  camStatus.textContent = autoTrack
-    ? "Face auto-track on — boxes follow faces (Pass still sets identity)."
-    : "Auto-track off — drag boxes manually.";
-  if (autoTrack && stream) startFaceLoop();
-}
 
 function startConsentStation() {
   consentStationMode = true;
