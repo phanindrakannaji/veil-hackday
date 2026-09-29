@@ -2,8 +2,11 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Veil · Console</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@450;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/shared.css" />
 </head>
 <body>
@@ -13,69 +16,110 @@
       <a href="/camera">Camera</a>
       <a href="/pass">Pass</a>
       <a class="active" href="/console">Console</a>
+      <a href="/cue">Cue</a>
     </nav>
   </div>
-  <div class="wrap stack">
-    <div class="grid-2">
-      <div class="card stack">
-        <h2>Issue Pass</h2>
-        <p class="small">Creates the current bindable Pass (Camera → Scan / bind latest).</p>
-        <label class="small muted">Event id</label>
-        <input id="eventId" value="hackday-demo" />
-        <label class="small muted">TTL (minutes)</label>
-        <input id="ttl" type="number" value="120" />
-        <button class="btn primary block" id="btnIssue">Issue Pass</button>
-        <div class="mono small" id="issuedOut"></div>
-      </div>
 
-      <div class="card stack">
-        <h2>Demo controls</h2>
-        <p class="small">Reset clears tokens, clips, and receipts. Camera re-seeds one unknown.</p>
-        <button class="btn bad block" id="btnReset">Demo reset</button>
-        <a class="btn block" href="/camera">Open Camera</a>
-        <ul class="small muted" style="margin:0;padding-left:1.2rem">
-          <li><strong>INTERNAL</strong> — operator view</li>
-          <li><strong>PUBLIC</strong> — Pass treatment enforced</li>
-          <li><strong>Export</strong> — post-capture rights</li>
-        </ul>
-      </div>
+  <div class="wrap console-wrap stack">
+    <div class="steps" id="demoSteps">
+      <div class="step done"><span>✓</span> Start</div>
+      <div class="step"><span>2</span> Capture</div>
+      <div class="step"><span>3</span> Change promo</div>
+      <div class="step"><span>4</span> Show proof</div>
     </div>
 
-    <div class="card stack" id="latestClipCard">
-      <h2>Latest clip · change policy &amp; re-export</h2>
-      <p class="small">Capture from Camera, then one tap here — no hunting IDs.</p>
-      <div id="latestClip" class="small muted">No clips yet. Capture from Camera.</div>
-      <div class="btn-row" id="latestClipActions" hidden>
-        <button class="btn warn" id="btnDenyPromoExport">Deny promo → re-export</button>
-        <button class="btn good" id="btnAllowPromoExport">Allow promo → re-export</button>
-        <button class="btn primary" id="btnExportOnly">Re-export only</button>
+    <!-- Hero: command header + live metrics -->
+    <section class="card console-hero stack">
+      <div>
+        <span class="section-label">Control plane</span>
+        <h1 class="console-title">Event console</h1>
+        <p class="console-lead">Live rights for this demo — start clean, then walk the pitch.</p>
       </div>
-      <div class="mono small" id="exportResult"></div>
-    </div>
-
-    <div class="card stack">
-      <h2>Active Passes</h2>
-      <div id="passTable" class="small muted">Loading…</div>
-    </div>
-
-    <div class="card stack">
-      <h2>All clips</h2>
-      <div id="clipTable" class="small muted">No clips yet.</div>
-    </div>
-
-    <div class="grid-2">
-      <div class="card stack">
-        <h2>Decision receipts</h2>
-        <button class="btn" id="btnRefreshReceipts">Refresh</button>
-        <div id="receipts" class="mono small" style="max-height:280px;overflow:auto"></div>
+      <div class="console-backend-row">
+        <span class="console-chip chip-muted" id="rightsBackendChip" title="Media Rights Graph backend">Rights graph · …</span>
+        <span class="console-chip chip-muted" id="openRouterChip" title="OpenRouter explain">AI · OpenRouter</span>
       </div>
-      <div class="card stack">
-        <h2>Media Rights Graph</h2>
-        <p class="small">person → clip → policy version → action</p>
-        <pre id="graph" class="mono small" style="max-height:280px;overflow:auto;white-space:pre-wrap;margin:0"></pre>
+      <div class="metric-strip" id="metricStrip" aria-live="polite">
+        <div class="metric">
+          <span class="metric-label">Passes active</span>
+          <span class="metric-value" id="metricPasses">—</span>
+        </div>
+        <div class="metric">
+          <span class="metric-label">Captures</span>
+          <span class="metric-value" id="metricCaptures">—</span>
+        </div>
+        <div class="metric">
+          <span class="metric-label">Last decision</span>
+          <span class="metric-value" id="metricDecision">—</span>
+        </div>
       </div>
-    </div>
+      <button class="btn primary console-btn-lg block" id="btnPrep">Start clean demo</button>
+      <p class="hint" id="prepHint">Clears old captures and issues a fresh Pass for the next person.</p>
+      <div class="console-hero-links">
+        <a class="btn ghost" href="/camera">Open Camera</a>
+        <a class="btn ghost" href="/cue">Cue card</a>
+        <button class="btn ghost console-danger-link" id="btnReset">Wipe everything…</button>
+      </div>
+      <div class="console-status" id="heroStatus" hidden></div>
+    </section>
+
+    <!-- During the pitch: latest capture -->
+    <section class="card console-capture stack">
+      <span class="section-label">Enforcement</span>
+      <div class="section-title">
+        <h2>Latest capture</h2>
+      </div>
+      <div id="latestClip" class="console-empty">No capture yet — press Capture on the Camera.</div>
+      <div class="console-capture-actions" id="latestClipActions" hidden>
+        <button class="btn warn console-btn-lg" id="btnDenyPromoExport">Block promo &amp; re-export</button>
+        <button class="btn good console-btn-lg" id="btnAllowPromoExport">Allow promo &amp; re-export</button>
+      </div>
+      <p class="console-result" id="exportResult" hidden></p>
+      <div class="console-explain-row" id="explainRow" hidden>
+        <button class="btn ghost console-btn-lg" id="btnExplain" type="button">Explain this decision</button>
+      </div>
+      <div class="console-explain-panel" id="explainPanel" hidden>
+        <div class="console-explain-head">
+          <span class="section-label">AI explain</span>
+          <span class="console-chip chip-muted" id="explainModelChip">OpenRouter</span>
+        </div>
+        <p class="console-explain-text" id="explainText"></p>
+      </div>
+      <button class="console-tiny-link" id="btnExportOnly" type="button" hidden>Check export only</button>
+    </section>
+
+    <!-- People with Passes -->
+    <section class="card stack">
+      <span class="section-label">Consent</span>
+      <div class="card-head">
+        <h2>People with Passes</h2>
+        <button class="btn ghost" id="btnIssue">Add guest Pass</button>
+      </div>
+      <div id="passList" class="console-people">
+        <p class="muted small">No Passes yet — start a clean demo above.</p>
+      </div>
+    </section>
+
+    <!-- Earlier captures (simple) -->
+    <section class="card stack" id="earlierSection" hidden>
+      <span class="section-label">Archive</span>
+      <h2>Earlier captures</h2>
+      <div id="clipList" class="console-earlier"></div>
+    </section>
+
+    <!-- Activity feed -->
+    <section class="card stack">
+      <span class="section-label">Activity</span>
+      <div class="card-head">
+        <h2>What happened</h2>
+        <button class="btn ghost" id="btnRefreshActivity">Refresh</button>
+      </div>
+      <ul class="activity-list" id="activityList">
+        <li class="muted">Nothing yet — run the demo to see decisions here.</li>
+      </ul>
+    </section>
   </div>
+
   <script src="/console.js" type="module"></script>
 </body>
 </html>

@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Veil · Cue card</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@450;500;600;700;800&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/shared.css" />
+</head>
+<body>
+  <div class="topbar">
+    <div class="brand">Veil <span>Cue</span></div>
+    <nav class="nav">
+      <a href="/">Home</a>
+      <a href="/camera">Camera</a>
+      <a href="/pass">Pass</a>
+      <a href="/console">Console</a>
+      <a class="active" href="/cue">Cue</a>
+    </nav>
+  </div>
+  <div class="wrap stack">
+    <div>
+      <span class="section-label">Presenter script</span>
+      <h1>~5 min pitch · live demo</h1>
+      <p class="muted small">Thesis: programmable consent for cameras — Pass → bind → enforce → rights graph → revoke. Not “AI blur as the product.”</p>
+    </div>
+
+    <div class="card stack">
+      <span class="section-label">Prep</span>
+      <h2>Before you start</h2>
+      <ol class="cue-list small">
+        <li>Mac Terminal: Veil server running · keep that window open</li>
+        <li>Console → <strong>Start clean demo</strong> (or Wipe everything)</li>
+        <li>Mac <code>/camera</code> · iPhone <code>/pass</code> · iPad <code>/console</code> · this tab <code>/cue</code></li>
+        <li>Drag the INTERNAL box onto your face</li>
+      </ol>
+    </div>
+
+    <div class="card stack">
+      <span class="section-label">Live clock</span>
+      <h2>Timed beats</h2>
+      <div class="cue-step"><span class="cue-time">0:00</span> <span class="say">“Cameras capture by default. Veil makes consent programmable.”</span>
+        <div class="do">Point at dual panes — INTERNAL clear, PUBLIC already blurring Unknown.</div>
+      </div>
+      <div class="cue-step"><span class="cue-time">0:30</span> <span class="say">“Attendee issues a Veil Pass — a short-lived credential, not a face ID.”</span>
+        <div class="do">iPhone: Pass shows · tap <strong>Allow</strong>.</div>
+      </div>
+      <div class="cue-step"><span class="cue-time">0:50</span> <span class="say">“We associate Pass ↔ person-track. Same decide() for livestream and later export.”</span>
+        <div class="do">Mac: <strong>Bind latest Pass</strong> · PUBLIC flips to allow ≤1s.</div>
+      </div>
+      <div class="cue-step"><span class="cue-time">1:20</span> <span class="say">“Capture once. Rights travel with the media.”</span>
+        <div class="do">Mac: <strong>Capture clip</strong>.</div>
+      </div>
+      <div class="cue-step"><span class="cue-time">1:40</span> <span class="say">“Organizer changes promo policy — re-export is blocked or allowed with a receipt.”</span>
+        <div class="do">iPad: Deny promo → re-export · then Allow promo → re-export · show receipts / graph. Optional: <strong>Explain this decision</strong> (OpenRouter) for judges.</div>
+      </div>
+      <div class="cue-step"><span class="cue-time">2:20</span> <span class="say">“Revoke and the live view goes deny — consent isn’t one-and-done.”</span>
+        <div class="do">iPhone: <strong>Revoke</strong> · PUBLIC → deny.</div>
+      </div>
+      <div class="cue-step"><span class="cue-time">2:40</span> <span class="say">“Beachhead: conference / venue organizers. Capture Enforcement SDK + Media Rights Graph — Neo4j when available, memory fallback for the live demo.”</span>
+        <div class="do">One sentence ask: event pilot vs multi-venue rollout. Console chip shows Rights graph · Neo4j.</div>
+      </div>
+      <div class="cue-step"><span class="cue-time">3:10</span> <span class="say">“We built this with Fabric — an agentic engineering control plane.”</span>
+        <div class="do">Show FACTORY-BOOTSTRAP: impact → contracts → workers → Sentinel gates → READY_TO_MERGE.</div>
+      </div>
+      <div class="cue-step"><span class="cue-time">4:20</span> <span class="say">Close: “Policy layer for cameras + control plane for agents. Who wants a pilot?”</span></div>
+    </div>
+
+    <div class="card stack">
+      <span class="section-label">Objections</span>
+      <h2>If asked “is that face AI?”</h2>
+      <p class="small">“We run on-device face <em>detection</em> so boxes follow people in a crowd. Identity is still the Pass — not a face database. Novelty is policy + receipts + dual views.”</p>
+    </div>
+
+    <p class="small muted">LAN Pass/Console: use the IP printed in the Terminal window · Camera prefers <code>localhost</code>.</p>
+  </div>
+</body>
+</html>

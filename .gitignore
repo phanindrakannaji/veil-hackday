@@ -6,3 +6,4 @@ data/*.jsonl
 .env
 *.log
 .DS_Store
+.env.openrouter

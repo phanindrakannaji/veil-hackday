@@ -20,9 +20,16 @@ import {
   getClip,
   getLatestClip,
   updateClipExport,
-  getRightsGraph,
   clearClipsAndEdges,
+  getRightsGraphPayload,
+  getRightsGraph,
 } from "./rights-graph.js";
+import { isNeo4jReady, getNeo4jUri, initNeo4j } from "./neo4j.js";
+import {
+  isOpenRouterReady,
+  getOpenRouterModel,
+  explainDecision,
+} from "./openrouter.js";
 
 export const api = Router();
 
@@ -135,8 +142,70 @@ api.get("/receipts", (_req, res) => {
   res.json(listReceipts());
 });
 
-api.get("/rights-graph", (_req, res) => {
-  res.json({ edges: getRightsGraph(), clips: listClips() });
+api.get("/rights-graph", async (_req, res) => {
+  res.json(await getRightsGraphPayload());
+});
+
+api.get("/neo4j/status", async (_req, res) => {
+  // Soft re-try if previously disabled but Neo4j came up later
+  if (!isNeo4jReady()) {
+    await initNeo4j();
+  }
+  const ok = isNeo4jReady();
+  res.json({
+    ok,
+    uri: getNeo4jUri(),
+    backend: ok ? "neo4j" : "memory",
+  });
+});
+
+// --- OpenRouter explain ---
+
+api.get("/openrouter/status", (_req, res) => {
+  const ok = isOpenRouterReady();
+  if (ok) {
+    res.json({ ok: true, model: getOpenRouterModel() });
+  } else {
+    res.json({ ok: false });
+  }
+});
+
+api.post("/ai/explain", async (req, res) => {
+  if (!isOpenRouterReady()) {
+    return res.status(503).json({ error: "OpenRouter not configured" });
+  }
+
+  const clipId = typeof req.body?.clip_id === "string" ? req.body.clip_id : undefined;
+  let clip = clipId ? getClip(clipId) : getLatestClip();
+  if (clipId && !clip) {
+    return res.status(404).json({ error: "clip_not_found" });
+  }
+  if (!clip) {
+    clip = getLatestClip() ?? undefined;
+  }
+
+  const receipts = listReceipts().slice(-8);
+  let edges: ReturnType<typeof getRightsGraph> = [];
+  try {
+    const graph = await getRightsGraphPayload();
+    edges = (graph.edges ?? []).slice(-12);
+  } catch {
+    edges = getRightsGraph().slice(-12);
+  }
+
+  try {
+    const { text, model } = await explainDecision({
+      clip: clip ?? null,
+      receipts,
+      edges,
+      question: typeof req.body?.question === "string" ? req.body.question : undefined,
+    });
+    res.json({ text, model, backend: "openrouter" });
+  } catch (err) {
+    const msg = (err as Error).message || "explain_failed";
+    const status = /not configured/i.test(msg) ? 503 : 502;
+    res.status(status).json({ error: msg });
+  }
 });
 
 // --- Clip stubs (post-capture) ---
@@ -198,8 +267,28 @@ api.post("/clips/:clipId/policy-export", (req, res) => {
   const clip = getClip(req.params.clipId);
   if (!clip) return res.status(404).json({ error: "not_found" });
 
+  // Heal demo clips captured before bind (token_id "none")
+  if (!clip.token_id || clip.token_id === "none") {
+    const latest = getLatestActive();
+    if (!latest) {
+      return res.status(400).json({
+        error: "clip_unbound",
+        hint: "Bind a Pass on Camera, Capture again, then retry export.",
+      });
+    }
+    clip.token_id = latest.payload.token_id;
+    clip.subject = latest.payload.subject;
+    writeReceipt({
+      token_id: clip.token_id,
+      track_id: clip.track_id,
+      audience: "policy",
+      action: "attach_latest_pass",
+      reason: "healed_unbound_clip",
+    });
+  }
+
   const promo = req.body?.promotional_use;
-  if (typeof promo === "boolean" && clip.token_id && clip.token_id !== "none") {
+  if (typeof promo === "boolean") {
     const patched = updateTokenPolicy(clip.token_id, {
       permissions: { promotional_use: promo },
     });
@@ -255,6 +344,38 @@ api.post("/demo/reset", (_req, res) => {
     ok: true,
     epoch: demoEpoch,
     note: "Cleared tokens/clips/receipts. Camera will re-seed one unknown person.",
+  });
+});
+
+/** Reset + issue a fresh Pass ready for Camera bind. */
+api.post("/demo/prep", (_req, res) => {
+  clearAllTokens();
+  clearClipsAndEdges();
+  clearReceipts();
+  demoEpoch += 1;
+  const signed = issuePass({
+    event_id: "hackday-demo",
+    ttl_minutes: 120,
+    permissions: {
+      internal_recording: true,
+      public_livestream: true,
+      promotional_use: false,
+      retention: true,
+    },
+    treatment: { public: "blur", internal: "allow" },
+  });
+  writeReceipt({
+    token_id: signed.payload.token_id,
+    track_id: "n/a",
+    audience: "demo",
+    action: "prep",
+    reason: `epoch_${demoEpoch}`,
+  });
+  res.json({
+    ok: true,
+    epoch: demoEpoch,
+    pass: signed,
+    note: "Clean slate + Pass issued. Camera re-seeds Unknown; tap Scan / bind latest Pass.",
   });
 });
 

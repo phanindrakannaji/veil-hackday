@@ -4,6 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Veil Hack Day</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@450;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/shared.css" />
 </head>
 <body>
@@ -13,30 +16,40 @@
       <a href="/camera">Camera</a>
       <a href="/pass">Pass</a>
       <a href="/console">Console</a>
+      <a href="/cue">Cue</a>
     </nav>
   </div>
   <div class="wrap stack">
-    <h1>Policy / rights layer for cameras</h1>
-    <p>Open the right page on each device (same Wi‑Fi as this MacBook).</p>
-    <div class="grid-2">
-      <a class="card" href="/camera" style="text-decoration:none;color:inherit">
-        <h2>📷 Camera — MacBook</h2>
-        <p>Internal + Public · Scan / bind latest Pass · Capture clip</p>
+    <div class="home-hero">
+      <span class="section-label">Policy layer for cameras</span>
+      <h1>Veil control plane</h1>
+      <p>Open the right surface on each device — same Wi‑Fi as this MacBook.</p>
+    </div>
+    <div class="launch-grid">
+      <a class="launch-tile" href="/camera">
+        <div class="tile-icon">◎</div>
+        <h2>Camera</h2>
+        <p>Internal + Public dual view · Scan / bind latest Pass · Capture clip</p>
+        <span class="tile-device">MacBook</span>
       </a>
-      <a class="card" href="/pass" style="text-decoration:none;color:inherit">
-        <h2>📱 Pass — iPhone</h2>
-        <p>QR bind URL · Allow / Blur / Deny · Copy token · Revoke</p>
+      <a class="launch-tile" href="/pass">
+        <div class="tile-icon">◇</div>
+        <h2>Pass</h2>
+        <p>QR credential · Allow / Blur / Deny · Copy token · Revoke</p>
+        <span class="tile-device">iPhone</span>
       </a>
-      <a class="card" href="/console" style="text-decoration:none;color:inherit">
-        <h2>📒 Console — iPad</h2>
+      <a class="launch-tile" href="/console">
+        <div class="tile-icon">▣</div>
+        <h2>Console — live rights</h2>
         <p>Issue Pass · Latest clip re-export · Demo reset · Receipts</p>
+        <span class="tile-device">iPad</span>
       </a>
-      <div class="card">
-        <h2>60s narrative</h2>
-        <p class="small">1. Unknown → PUBLIC blur<br/>
-        2. Bind latest Pass → PUBLIC allow (~1s)<br/>
-        3. Capture → change policy &amp; re-export + receipt</p>
-      </div>
+      <a class="launch-tile" href="/cue">
+        <div class="tile-icon">▸</div>
+        <h2>Cue card</h2>
+        <p>~5 min pitch script · Veil live + Fabric close · honesty line on blur</p>
+        <span class="tile-device">Presenter</span>
+      </a>
     </div>
   </div>
 </body>

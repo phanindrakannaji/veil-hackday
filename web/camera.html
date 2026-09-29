@@ -4,6 +4,9 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Veil · Camera</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@450;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/shared.css" />
 </head>
 <body>
@@ -13,25 +16,42 @@
       <a class="active" href="/camera">Camera</a>
       <a href="/pass">Pass</a>
       <a href="/console">Console</a>
+      <a href="/cue">Cue</a>
     </nav>
   </div>
   <div id="degradeBanner" class="banner" hidden>
     Camera unavailable — using sample still. Demo still works.
   </div>
   <div class="wrap stack">
-    <div class="btn-row">
-      <button class="btn primary" id="btnStart">Start camera</button>
-      <button class="btn" id="btnFallback">Use sample still</button>
-      <button class="btn" id="btnAddPerson">Add person track</button>
-      <button class="btn good" id="btnBindLatest">Scan / bind latest Pass</button>
-      <button class="btn good" id="btnCapture">Capture clip</button>
+    <div class="steps" id="demoSteps">
+      <div class="step active" data-step="1"><span>1</span> Faces tracked</div>
+      <div class="step" data-step="2"><span>2</span> Bind Pass</div>
+      <div class="step" data-step="3"><span>3</span> Capture</div>
+      <div class="step" data-step="4"><span>4</span> Console export</div>
     </div>
-    <p class="small muted" id="camStatus">Starting…</p>
 
-    <div class="grid-2">
+    <div class="toolbar">
+      <div class="toolbar-primary">
+        <button class="btn good lg" id="btnBindLatest">Bind latest Pass</button>
+        <button class="btn primary lg" id="btnCapture">Capture clip</button>
+        <button class="btn warn lg" id="btnJudge">Judge mode</button>
+      </div>
+      <div class="toolbar-secondary">
+        <button class="btn" id="btnStart">Start camera</button>
+        <button class="btn good" id="btnAutoTrack">Auto-track ON</button>
+        <button class="btn" id="btnAddPerson">Add track</button>
+        <button class="btn ghost" id="btnFallback">Sample still</button>
+      </div>
+    </div>
+    <div class="judge-banner" id="judgeBanner">Judge mode idle</div>
+    <p class="status-line" id="camStatus">Starting…</p>
+    <p class="hint" id="camHint">Tap a face box to bind the latest Pass to that person.</p>
+
+    <div class="grid-2 panes">
       <div>
         <div class="pane pane-internal" id="paneInternal">
           <div class="label label-big label-internal">INTERNAL</div>
+          <div class="pane-chip" id="chipInternal">operator</div>
           <video id="vidInternal" autoplay playsinline muted></video>
           <img class="fallback" id="stillInternal" hidden alt="still" />
           <div id="boxesInternal"></div>
@@ -40,6 +60,7 @@
       <div>
         <div class="pane pane-public" id="panePublic">
           <div class="label label-big label-public">PUBLIC</div>
+          <div class="pane-chip chip-blur" id="chipPublic">blur</div>
           <video id="vidPublic" autoplay playsinline muted></video>
           <img class="fallback" id="stillPublic" hidden alt="still" />
           <div id="boxesPublic"></div>
@@ -47,11 +68,20 @@
       </div>
     </div>
 
+    <div class="receipt-ticker" id="receiptTicker">
+      <div class="ticker-head"><span>Live decisions</span><span id="tickerMeta">—</span></div>
+      <div class="ticker-body" id="tickerBody">Waiting for receipts…</div>
+    </div>
+
     <div class="card stack">
-      <h2>Person tracks</h2>
-      <div id="trackList" class="mono small muted">No tracks yet.</div>
+      <span class="section-label">Tracking</span>
+      <div class="card-head">
+        <h2>People in frame</h2>
+        <span class="small muted" id="crowdCount">0 tracked</span>
+      </div>
+      <div id="trackList" class="track-grid">No tracks yet.</div>
       <details class="small muted">
-        <summary>Manual bind (optional)</summary>
+        <summary>Manual bind / advanced</summary>
         <label class="small muted">token_id</label>
         <input id="tokenInput" placeholder="paste token_id" />
         <button class="btn" id="btnBindManual" style="margin-top:0.5rem">Bind this token</button>

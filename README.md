@@ -58,6 +58,33 @@ HMAC secret: `VEIL_HMAC_SECRET` (demo default OK on LAN).
 
 - `POST /api/pass/issue` · `GET /api/pass/latest` · `POST /api/pass/:id/public` · `POST /api/pass/:id/revoke`
 - `POST /api/decide` · `POST /api/clips` · `POST /api/clips/:id/export` · `POST /api/clips/:id/policy-export`
-- `GET /api/receipts` · `GET /api/rights-graph` · `POST /api/demo/reset` · `GET /api/demo/epoch`
+- `GET /api/receipts` · `GET /api/rights-graph` · `GET /api/neo4j/status` · `GET /api/openrouter/status` · `POST /api/ai/explain` · `POST /api/demo/reset` · `GET /api/demo/epoch`
+
+
+---
+
+## OpenRouter (explain decisions)
+
+Optional AI helper on Console: **Explain this decision** summarizes the latest capture + receipts + rights-graph edges for judges.
+
+```bash
+# in .env (never commit)
+OPENROUTER_API_KEY=sk-or-...
+OPENROUTER_MODEL=openai/gpt-4o-mini   # optional override
+```
+
+`GET /api/openrouter/status` → `{ ok, model? }` · `POST /api/ai/explain` → `{ text, model, backend: "openrouter" }` (503 if key missing).
+
+## Media Rights Graph (Neo4j)
+
+Dual-write: in-memory for fast demo API; Neo4j MERGEs when Docker `veil-neo4j` is up.
+
+```bash
+docker run -d --name veil-neo4j -p 7474:7474 -p 7687:7687 -e NEO4J_AUTH=neo4j/veil-hackday neo4j:5
+cp .env.example .env   # NEO4J_URI / USER / PASSWORD
+```
+
+Browser: http://localhost:7474 · `neo4j` / `veil-hackday` (demo only).  
+`GET /api/neo4j/status` · `GET /api/rights-graph` includes `"backend": "neo4j"|"memory"`.
 
 **Out of scope:** SAM2, CV re-ID, C2PA, blockchain, HTTPS tunnels for happy path, microservices.

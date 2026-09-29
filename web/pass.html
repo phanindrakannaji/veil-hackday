@@ -6,6 +6,9 @@
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-title" content="Veil Pass" />
   <title>Veil · Pass</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@450;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/shared.css" />
   <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js"></script>
 </head>
@@ -16,10 +19,14 @@
       <a href="/camera">Camera</a>
       <a class="active" href="/pass">Pass</a>
       <a href="/console">Console</a>
+      <a href="/cue">Cue</a>
     </nav>
   </div>
-  <div class="wrap">
-    <div class="qr-wrap card">
+  <div class="wrap stack">
+    <div class="qr-wrap card pass-hero credential-card">
+      <span class="section-label">Credential</span>
+      <p class="small muted" style="margin:0">Your Pass for this event</p>
+      <div class="policy-status"><span class="badge" id="publicBadge">—</span></div>
       <canvas id="qr"></canvas>
       <div class="subject" id="subject">No pass yet</div>
       <div class="mono small muted" id="tokenMeta"></div>
@@ -27,25 +34,22 @@
         <code class="mono small" id="tokenFull">—</code>
         <button class="btn" id="btnCopy" type="button">Copy</button>
       </div>
-      <div class="small" style="margin-top:0.5rem">
-        Public livestream:
-        <span class="badge" id="publicBadge">—</span>
-      </div>
-      <p class="small muted" style="margin-top:0.75rem;text-align:center">
-        Camera can tap <strong>Scan / bind latest Pass</strong>, or scan this QR to open Camera with auto-bind.
+      <p class="small muted" style="margin-top:0.75rem">
+        On the Mac: tap your face or <strong>Bind latest Pass</strong>. Crowd demo: each phone = one Pass.
       </p>
     </div>
 
-    <div class="card" style="margin-top:1rem">
-      <h2>My policy (public livestream)</h2>
-      <p class="small">Tap to update rights. Camera Public pane reacts within ~1s.</p>
+    <div class="card stack pass-actions">
+      <span class="section-label">Public livestream</span>
+      <h2>What others may see</h2>
+      <p class="small">Controls what the PUBLIC camera feed may show of you.</p>
       <div class="btn-row">
         <button class="btn good" id="btnAllow">Allow</button>
-        <button class="btn warn" id="btnBlur">Blur</button>
+        <button class="btn warn" id="btnBlur">Blur me</button>
         <button class="btn bad" id="btnDeny">Deny</button>
       </div>
       <button class="btn bad block" id="btnRevoke">Revoke Pass</button>
-      <button class="btn ghost block" id="btnNew">Get new Pass (self-issue)</button>
+      <button class="btn ghost block" id="btnNew">Get new Pass</button>
     </div>
   </div>
   <script src="/pass.js" type="module"></script>
