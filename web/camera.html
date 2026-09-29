@@ -32,6 +32,7 @@
 
     <div class="toolbar">
       <div class="toolbar-primary">
+        <button class="btn good lg" id="btnConsentStation">Consent Station OFF</button>
         <button class="btn good lg" id="btnBindLatest">Bind latest Pass</button>
         <button class="btn primary lg" id="btnCapture">Capture clip</button>
         <button class="btn warn lg" id="btnJudge">Judge mode</button>
@@ -43,6 +44,7 @@
         <button class="btn ghost" id="btnFallback">Sample still</button>
       </div>
     </div>
+    <div class="judge-banner" id="stationBanner">Consent Station idle</div>
     <div class="judge-banner" id="judgeBanner">Judge mode idle</div>
     <p class="status-line" id="camStatus">Starting…</p>
     <p class="hint" id="camHint">Tap a face box to bind the latest Pass to that person.</p>
@@ -89,6 +91,7 @@
     </div>
   </div>
 
+  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
   <script src="/camera.js" type="module"></script>
 </body>
 </html>

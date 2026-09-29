@@ -26,7 +26,10 @@
     <div class="qr-wrap card pass-hero credential-card">
       <span class="section-label">Credential</span>
       <p class="small muted" style="margin:0">Your Pass for this event</p>
-      <div class="policy-status"><span class="badge" id="publicBadge">—</span></div>
+      <div class="policy-status">
+        <span class="badge" id="publicBadge">—</span>
+        <span class="badge" id="bindingBadge" style="margin-left:0.4rem">—</span>
+      </div>
       <canvas id="qr"></canvas>
       <div class="subject" id="subject">No pass yet</div>
       <div class="mono small muted" id="tokenMeta"></div>
@@ -35,7 +38,7 @@
         <button class="btn" id="btnCopy" type="button">Copy</button>
       </div>
       <p class="small muted" style="margin-top:0.75rem">
-        On the Mac: tap your face or <strong>Bind latest Pass</strong>. Crowd demo: each phone = one Pass.
+        <strong>Show QR at Consent Station</strong> or on Mac: tap face / <strong>Bind latest Pass</strong>. Crowd: each phone = one Pass.
       </p>
     </div>
 

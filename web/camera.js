@@ -61,6 +61,7 @@ document.getElementById("btnBindManual").onclick = bindManual;
 document.getElementById("btnCapture").onclick = captureClip;
 document.getElementById("btnJudge").onclick = () => runJudgeMode();
 document.getElementById("btnAutoTrack").onclick = toggleAutoTrack;
+document.getElementById("btnConsentStation").onclick = toggleConsentStation;
 
 function toggleAutoTrack() {
   autoTrack = !autoTrack;
@@ -71,6 +72,120 @@ function toggleAutoTrack() {
     ? "Face auto-track on — boxes follow faces (Pass still sets identity)."
     : "Auto-track off — drag boxes manually.";
   if (autoTrack && stream) startFaceLoop();
+}
+
+function toggleConsentStation() {
+  consentStationMode = !consentStationMode;
+  const btn = document.getElementById("btnConsentStation");
+  const banner = document.getElementById("stationBanner");
+  btn.textContent = consentStationMode ? "Consent Station ON" : "Consent Station OFF";
+  btn.classList.toggle("good", consentStationMode);
+  if (consentStationMode) {
+    banner.classList.add("on");
+    banner.textContent = "Consent Station active — scanning for Pass QR…";
+    camStatus.textContent = "Consent Station ON — hold Pass QR to camera to bind best unbound face.";
+    startQRScanning();
+  } else {
+    banner.classList.remove("on");
+    stopQRScanning();
+    camStatus.textContent = "Consent Station OFF.";
+  }
+}
+
+async function startQRScanning() {
+  if (!stream) {
+    camStatus.textContent = "Start camera first to scan QR codes.";
+    return;
+  }
+  if ("BarcodeDetector" in window) {
+    try {
+      qrBarcodeDetector = new BarcodeDetector({ formats: ["qr_code"] });
+    } catch {
+      qrBarcodeDetector = null;
+    }
+  }
+  if (!qrBarcodeDetector && !window.jsQR) {
+    camStatus.textContent = "QR scanner unavailable — BarcodeDetector and jsQR both missing.";
+    return;
+  }
+  if (!qrBarcodeDetector) {
+    qrCanvas = document.createElement("canvas");
+    qrCtx = qrCanvas.getContext("2d", { willReadFrequently: true });
+  }
+  const tick = async () => {
+    qrScanRaf = requestAnimationFrame(tick);
+    if (!consentStationMode || !stream) return;
+    try {
+      let code = null;
+      if (qrBarcodeDetector) {
+        const codes = await qrBarcodeDetector.detect(vidIn);
+        if (codes.length > 0) code = codes[0].rawValue;
+      } else if (window.jsQR) {
+        qrCanvas.width = vidIn.videoWidth || 640;
+        qrCanvas.height = vidIn.videoHeight || 480;
+        qrCtx.drawImage(vidIn, 0, 0, qrCanvas.width, qrCanvas.height);
+        const imageData = qrCtx.getImageData(0, 0, qrCanvas.width, qrCanvas.height);
+        const result = jsQR(imageData.data, imageData.width, imageData.height);
+        if (result) code = result.data;
+      }
+      if (code) {
+        await handleQRCode(code);
+      }
+    } catch (err) {
+      console.warn("QR scan error:", err);
+    }
+  };
+  qrScanRaf = requestAnimationFrame(tick);
+}
+
+function stopQRScanning() {
+  if (qrScanRaf) {
+    cancelAnimationFrame(qrScanRaf);
+    qrScanRaf = null;
+  }
+}
+
+async function handleQRCode(rawCode) {
+  let tokenId = null;
+  try {
+    const url = new URL(rawCode);
+    tokenId = url.searchParams.get("bind");
+  } catch {
+    if (rawCode.includes("bind=")) {
+      const match = rawCode.match(/bind=([^&\s]+)/);
+      if (match) tokenId = decodeURIComponent(match[1]);
+    } else if (rawCode.match(/^[0-9a-f-]{36}$/i)) {
+      tokenId = rawCode;
+    }
+  }
+  if (!tokenId) return;
+  if (recentBinds.has(tokenId)) return;
+  recentBinds.add(tokenId);
+  setTimeout(() => recentBinds.delete(tokenId), BIND_DEBOUNCE_MS);
+  const banner = document.getElementById("stationBanner");
+  banner.textContent = `Scanned Pass ${tokenId.slice(0, 8)}… — binding…`;
+  try {
+    const target = pickBindTarget();
+    const res = await fetch(`${API}/bind`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ token_id: tokenId, track_id: target?.id }),
+    });
+    if (!res.ok) {
+      const err = await res.json();
+      banner.textContent = `Bind failed: ${err.error || "unknown"}`;
+      camStatus.textContent = `Bind failed for ${tokenId.slice(0, 8)}… — ${err.error || res.statusText}`;
+      return;
+    }
+    const data = await res.json();
+    const signed = data.pass;
+    applyBind(tokenId, signed);
+    banner.textContent = `✓ Bound Pass ${tokenId.slice(0, 8)}… → ${signed.payload.subject}`;
+    camStatus.textContent = `Consent Station: Bound ${tokenId.slice(0, 8)}… → ${signed.payload.subject}`;
+  } catch (err) {
+    banner.textContent = `Bind error: ${err.message || err}`;
+    camStatus.textContent = `Bind error for ${tokenId.slice(0, 8)}…`;
+  }
 }
 
 async function startCamera({ manual = false } = {}) {
@@ -675,6 +790,13 @@ function stopFaceLoop() {
 
 let tickerTimer = null;
 let judgeRunning = false;
+let consentStationMode = false;
+let qrScanRaf = null;
+let qrBarcodeDetector = null;
+let qrCanvas = null;
+let qrCtx = null;
+let recentBinds = new Set();
+const BIND_DEBOUNCE_MS = 3000;
 
 function actClass(action) {
   if (action === "allow" || action === "clip_created" || action === "export_allowed") return "act-allow";

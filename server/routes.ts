@@ -42,6 +42,7 @@ import {
   aiStatusPayload,
 } from "./ai.js";
 import { detectAnomalies } from "./anomalies.js";
+import { bindPass, getBinding, clearBindings } from "./bind-registry.js";
 
 export const api = Router();
 
@@ -123,6 +124,39 @@ api.post("/pass/:tokenId/public", (req, res) => {
     reason: "pass_toggle",
   });
   res.json(t);
+});
+
+// --- Bind registry (Consent Station) ---
+
+api.post("/bind", (req, res) => {
+  const { token_id, track_id } = req.body ?? {};
+  if (!token_id) {
+    return res.status(400).json({ error: "token_id required" });
+  }
+  const t = getToken(token_id);
+  if (!t) {
+    return res.status(404).json({ error: "pass_not_found" });
+  }
+  if (t.payload.revoked) {
+    return res.status(400).json({ error: "pass_revoked" });
+  }
+  const binding = bindPass(token_id, track_id);
+  writeReceipt({
+    token_id,
+    track_id: track_id ?? "station",
+    audience: "bind",
+    action: "station_bind",
+    reason: "consent_station_qr",
+  });
+  res.json({ binding, pass: t });
+});
+
+api.get("/pass/:tokenId/binding", (req, res) => {
+  const binding = getBinding(req.params.tokenId);
+  if (!binding) {
+    return res.status(404).json({ error: "not_bound" });
+  }
+  res.json(binding);
 });
 
 // --- Policy decide ---
@@ -482,6 +516,7 @@ api.post("/demo/reset", (_req, res) => {
   clearAllTokens();
   clearClipsAndEdges();
   clearReceipts();
+  clearBindings();
   demoEpoch += 1;
   writeReceipt({
     token_id: "none",
@@ -493,7 +528,7 @@ api.post("/demo/reset", (_req, res) => {
   res.json({
     ok: true,
     epoch: demoEpoch,
-    note: "Cleared tokens/clips/receipts. Camera will re-seed one unknown person.",
+    note: "Cleared tokens/clips/receipts/bindings. Camera will re-seed one unknown person.",
   });
 });
 
@@ -502,6 +537,7 @@ api.post("/demo/prep", (_req, res) => {
   clearAllTokens();
   clearClipsAndEdges();
   clearReceipts();
+  clearBindings();
   demoEpoch += 1;
   const signed = issuePass({
     event_id: "hackday-demo",
@@ -525,7 +561,7 @@ api.post("/demo/prep", (_req, res) => {
     ok: true,
     epoch: demoEpoch,
     pass: signed,
-    note: "Clean slate + Pass issued. Camera re-seeds Unknown; tap Scan / bind latest Pass.",
+    note: "Clean slate + Pass issued. Camera re-seeds Unknown; station enroll or tap Scan / bind latest Pass.",
   });
 });
 

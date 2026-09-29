@@ -9,12 +9,14 @@ const LS_KEY = "veil_pass_token_id";
 const subjectEl = document.getElementById("subject");
 const metaEl = document.getElementById("tokenMeta");
 const badgeEl = document.getElementById("publicBadge");
+const bindingBadgeEl = document.getElementById("bindingBadge");
 const tokenFullEl = document.getElementById("tokenFull");
 const qrCanvas = document.getElementById("qr");
 
 let tokenId = localStorage.getItem(LS_KEY);
 let signed = null;
 let rotateTimer = null;
+let bindingPollTimer = null;
 
 document.getElementById("btnAllow").onclick = () => setPublic("allow");
 document.getElementById("btnBlur").onclick = () => setPublic("blur");
@@ -31,6 +33,8 @@ async function init() {
     await issueSelf();
   }
   rotateTimer = setInterval(() => drawQR(), 20000);
+  bindingPollTimer = setInterval(() => checkBinding(), 2000);
+  checkBinding();
 }
 
 async function issueSelf() {
@@ -122,6 +126,24 @@ async function revoke() {
   const res = await fetch(`${API}/pass/${tokenId}/revoke`, { method: "POST" });
   signed = await res.json();
   render();
+}
+
+async function checkBinding() {
+  if (!tokenId || !bindingBadgeEl) return;
+  try {
+    const res = await fetch(`${API}/pass/${tokenId}/binding`);
+    if (res.ok) {
+      const binding = await res.json();
+      bindingBadgeEl.textContent = "Linked to Camera";
+      bindingBadgeEl.className = "badge allow";
+    } else {
+      bindingBadgeEl.textContent = "Not linked";
+      bindingBadgeEl.className = "badge";
+    }
+  } catch {
+    bindingBadgeEl.textContent = "Not linked";
+    bindingBadgeEl.className = "badge";
+  }
 }
 
 init();
