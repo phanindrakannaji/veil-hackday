@@ -20,7 +20,7 @@ Server prints Local + LAN URLs. Default port **8787**.
 
 1. **MacBook** `/camera` — camera or sample still; **Unknown** track; **PUBLIC** shows **blur**.
 2. **iPhone** `/pass` — Pass issues itself (token + Copy + QR). Tap **Allow**.
-3. **MacBook** → **Consent Station ON** → hold Pass QR to camera (scans and binds to best unbound face). OR **Bind latest Pass** (or open QR URL `…/camera?bind=<token_id>`). **PUBLIC** flips to **allow** within ~1s. Pass shows **"Linked to Camera"** chip.
+3. **MacBook** — hold Pass QR at camera (scans automatically and binds to best unbound face) or tap a face. **PUBLIC** flips to **allow** within ~1s. Pass shows **"Linked to Camera"** chip.
 4. **MacBook** → **Capture clip**.
 5. **iPad** `/console` → **Latest clip** → **Deny promo → re-export** (blocked/transformed + receipt) → **Allow promo → re-export** (allowed). Optional: Pass **Revoke** → PUBLIC goes **deny** on next tick.
 
@@ -28,7 +28,7 @@ Console **Issue Pass** sets the current bindable token. **Demo reset** clears to
 
 ### Consent Station mode
 
-Camera page now includes **Consent Station** toggle. When ON:
+Camera page automatically scans for Pass QR codes when the camera is live:
 - Scans live video for Pass QR codes (BarcodeDetector preferred; jsQR CDN fallback)
 - Parses `/camera?bind=<token_id>`, URL with `bind=`, or bare token_id
 - Binds valid active Pass to best unbound face (largest near center)
@@ -45,7 +45,7 @@ Camera page now includes **Consent Station** toggle. When ON:
 |---------|-----|
 | Camera blocked / blank | Banner + sample still auto-loads. Or click **Use sample still**. Prefer `localhost` on Mac for getUserMedia. |
 | Wrong Wi‑Fi / can’t reach Pass/Console | Same LAN as Mac. Use the printed `LAN: http://…:8787` URL, not another machine’s IP. |
-| Stale / wrong token on bind | Console **Issue Pass** or Pass **Get new Pass**, then Camera **Scan / bind latest Pass**. Or **Demo reset** and re-run script. |
+| Stale / wrong token on bind | Console **Issue Pass** or Pass **Get new Pass**, then Camera show QR or tap face. Or **Demo reset** and re-run script. |
 | PUBLIC stuck on blur after Allow | Wait ≤1s (800ms poll). Confirm Pass shows Allow badge, then bind again. |
 | Clip / export not showing | Capture on Camera first; Console **Latest clip** refreshes every 2s. |
 | Need clean slate mid-demo | Console **Demo reset** or `POST /api/demo/reset`. |

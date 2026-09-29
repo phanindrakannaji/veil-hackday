@@ -55,12 +55,9 @@
           <span class="metric-value" id="metricDecision">—</span>
         </div>
       </div>
-      <button class="btn primary console-btn-lg block" id="btnPrep">Start clean demo</button>
-      <p class="hint" id="prepHint">Clears old captures and issues a fresh Pass for the next person.</p>
       <div class="console-hero-links">
         <a class="btn ghost" href="/camera">Open Camera</a>
         <a class="btn ghost" href="/cue">Cue card</a>
-        <button class="btn ghost console-danger-link" id="btnReset">Wipe everything…</button>
       </div>
       <div class="console-ai-actions">
         <button class="btn ghost" id="btnConsentBrief" type="button">Consent brief</button>
@@ -80,7 +77,6 @@
         </div>
         <div class="console-judge-cards" id="judgeCards"></div>
       </div>
-      <div class="console-status" id="heroStatus" hidden></div>
     </section>
 
     <!-- During the pitch: latest capture -->
@@ -145,6 +141,18 @@
       <ul class="activity-list" id="activityList">
         <li class="muted">Nothing yet — run the demo to see decisions here.</li>
       </ul>
+    </section>
+
+    <!-- Demo prep / reset (moved to bottom) -->
+    <section class="card stack">
+      <span class="section-label">Demo control</span>
+      <h2>Prep &amp; reset</h2>
+      <button class="btn primary console-btn-lg block" id="btnPrep">Start clean demo</button>
+      <p class="hint" id="prepHint">Clears old captures and issues a fresh Pass for the next person.</p>
+      <div class="console-hero-links">
+        <button class="btn ghost console-danger-link" id="btnReset">Wipe everything…</button>
+      </div>
+      <div class="console-status" id="heroStatus" hidden></div>
     </section>
   </div>
 

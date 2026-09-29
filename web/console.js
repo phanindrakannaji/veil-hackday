@@ -75,7 +75,7 @@ async function issuePass() {
   const signed = await res.json();
   const name = signed.payload?.subject ?? "Guest";
   setHeroStatus(
-    `Added a Pass for <strong>${esc(name)}</strong>. On Camera, tap <strong>Scan / bind latest Pass</strong>.`
+    `Added a Pass for <strong>${esc(name)}</strong>. On Camera, show Pass QR or tap a face.`
   );
   await refreshAll();
 }
