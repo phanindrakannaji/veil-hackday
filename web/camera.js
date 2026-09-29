@@ -1,10 +1,12 @@
 /**
  * Camera page — MacBook capture station.
  * Manual person tracks + dual Internal/Public panes.
+ * Polls decide() every 800ms so Public flips within ~1s after bind/revoke/policy.
  */
 
 const API = "/api";
-const tracks = []; // { id, x, y, w, h, token_id, subject, label }
+const POLL_MS = 800;
+const tracks = []; // { id, x, y, w, h, token_id, subject, label, policySummary, ... }
 
 const vidIn = document.getElementById("vidInternal");
 const vidPub = document.getElementById("vidPublic");
@@ -15,9 +17,11 @@ const boxesPub = document.getElementById("boxesPublic");
 const trackList = document.getElementById("trackList");
 const camStatus = document.getElementById("camStatus");
 const tokenInput = document.getElementById("tokenInput");
+const degradeBanner = document.getElementById("degradeBanner");
 
 let stream = null;
 let pollTimer = null;
+let demoEpoch = 1;
 
 const SAMPLE_STILL =
   "data:image/svg+xml," +
@@ -31,13 +35,14 @@ const SAMPLE_STILL =
   <text x="480" y="560" text-anchor="middle" fill="#8b9bb0" font-family="sans-serif" font-size="22">Sample still (camera backup)</text>
 </svg>`);
 
-document.getElementById("btnStart").onclick = startCamera;
-document.getElementById("btnFallback").onclick = useFallback;
+document.getElementById("btnStart").onclick = () => startCamera({ manual: true });
+document.getElementById("btnFallback").onclick = () => useFallback("Sample still selected.");
 document.getElementById("btnAddPerson").onclick = () => addTrack();
-document.getElementById("btnBind").onclick = bindPass;
+document.getElementById("btnBindLatest").onclick = bindLatestPass;
+document.getElementById("btnBindManual").onclick = bindManual;
 document.getElementById("btnCapture").onclick = captureClip;
 
-async function startCamera() {
+async function startCamera({ manual = false } = {}) {
   try {
     stream = await navigator.mediaDevices.getUserMedia({
       video: { facingMode: "user", width: { ideal: 1280 }, height: { ideal: 720 } },
@@ -49,14 +54,17 @@ async function startCamera() {
     stillPub.hidden = true;
     vidIn.hidden = false;
     vidPub.hidden = false;
+    degradeBanner.hidden = true;
     camStatus.textContent = "Camera live.";
   } catch (err) {
-    camStatus.textContent = `Camera failed: ${err.message}. Using sample still.`;
-    useFallback();
+    const msg = manual
+      ? `Camera failed (${err.message}). Using sample still.`
+      : "Camera unavailable — using sample still. Demo still works.";
+    useFallback(msg);
   }
 }
 
-function useFallback() {
+function useFallback(statusMsg) {
   if (stream) {
     stream.getTracks().forEach((t) => t.stop());
     stream = null;
@@ -67,7 +75,10 @@ function useFallback() {
   stillPub.src = SAMPLE_STILL;
   stillIn.hidden = false;
   stillPub.hidden = false;
-  camStatus.textContent = "Sample still active (backup plan).";
+  degradeBanner.hidden = false;
+  degradeBanner.textContent =
+    statusMsg || "Camera unavailable — using sample still. Demo still works.";
+  camStatus.textContent = statusMsg || "Sample still active.";
 }
 
 function addTrack(opts = {}) {
@@ -83,38 +94,60 @@ function addTrack(opts = {}) {
     label: opts.label ?? `Person ${n}`,
     internalAction: "allow",
     publicAction: "blur",
+    policySummary: "unknown · public=blur",
   };
   tracks.push(track);
   renderTracks();
   decideAll();
-  if (!pollTimer) pollTimer = setInterval(decideAll, 1500);
+  ensurePoll();
+  return track;
 }
 
-async function bindPass() {
-  const tokenId = tokenInput.value.trim();
-  if (!tokenId) {
-    alert("Paste a token_id from the Pass page or Console.");
-    return;
-  }
-  const res = await fetch(`${API}/pass/${tokenId}`);
-  if (!res.ok) {
-    alert("Token not found");
-    return;
-  }
-  const signed = await res.json();
-  // Bind to first unknown track, or create one
+function ensurePoll() {
+  if (!pollTimer) pollTimer = setInterval(decideAll, POLL_MS);
+}
+
+function applyBind(tokenId, signed) {
   let track = tracks.find((t) => !t.token_id);
   if (!track) {
-    addTrack({ token_id: tokenId, subject: signed.payload.subject, label: "Attendee" });
-    track = tracks[tracks.length - 1];
+    track = addTrack({
+      token_id: tokenId,
+      subject: signed.payload.subject,
+      label: "Attendee",
+    });
   } else {
     track.token_id = tokenId;
     track.subject = signed.payload.subject;
     track.label = "Attendee";
   }
   renderTracks();
-  await decideAll();
+  decideAll();
   camStatus.textContent = `Bound Pass ${tokenId.slice(0, 8)}… → ${track.subject}`;
+}
+
+async function bindLatestPass() {
+  const res = await fetch(`${API}/pass/latest`);
+  if (!res.ok) {
+    camStatus.textContent = "No active Pass yet — Issue on Console or open /pass on phone.";
+    return;
+  }
+  const signed = await res.json();
+  applyBind(signed.payload.token_id, signed);
+}
+
+async function bindManual() {
+  const tokenId = tokenInput.value.trim();
+  if (!tokenId) {
+    camStatus.textContent = "Paste a token_id, or use Scan / bind latest Pass.";
+    return;
+  }
+  const res = await fetch(`${API}/pass/${tokenId}`);
+  if (!res.ok) {
+    camStatus.textContent = "Token not found.";
+    return;
+  }
+  const signed = await res.json();
+  applyBind(tokenId, signed);
 }
 
 async function decideAll() {
@@ -133,21 +166,45 @@ async function decideAll() {
         });
         const data = await res.json();
         if (audience === "internal") track.internalAction = data.decision.action;
-        else track.publicAction = data.decision.action;
+        else {
+          track.publicAction = data.decision.action;
+          track.policySummary = summarizePolicy(track, data.decision);
+        }
       } catch {
         /* ignore transient */
+      }
+    }
+    // Enrich summary from token when bound
+    if (track.token_id) {
+      try {
+        const res = await fetch(`${API}/pass/${track.token_id}`);
+        if (res.ok) {
+          const signed = await res.json();
+          const p = signed.payload;
+          const pub = p.revoked ? "deny" : track.publicAction;
+          track.policySummary =
+            `${p.revoked ? "REVOKED" : "bound"} · public=${pub}` +
+            ` · promo=${p.permissions.promotional_use ? "yes" : "no"}`;
+        }
+      } catch {
+        /* ignore */
       }
     }
   }
   renderTracks();
 }
 
+function summarizePolicy(track, decision) {
+  if (!track.token_id) return `unknown · public=${decision.action}`;
+  return `bound · public=${decision.action} (${decision.reason})`;
+}
+
 function renderTracks() {
   boxesIn.innerHTML = "";
   boxesPub.innerHTML = "";
   for (const t of tracks) {
-    boxesIn.appendChild(boxEl(t, t.internalAction));
-    boxesPub.appendChild(boxEl(t, t.publicAction));
+    boxesIn.appendChild(boxEl(t, t.internalAction, "INTERNAL"));
+    boxesPub.appendChild(boxEl(t, t.publicAction, "PUBLIC"));
   }
   if (!tracks.length) {
     trackList.textContent = "No tracks yet.";
@@ -156,33 +213,55 @@ function renderTracks() {
   trackList.innerHTML = tracks
     .map(
       (t) =>
-        `${t.id} · ${t.label} · subject=${t.subject} · token=${t.token_id ?? "none"} · ` +
-        `int=<span class="badge ${t.internalAction}">${t.internalAction}</span> ` +
-        `pub=<span class="badge ${t.publicAction}">${t.publicAction}</span>`
+        `<div class="track-row">` +
+        `<strong>${esc(t.label)}</strong> · ${esc(t.subject)} · ` +
+        `token=${t.token_id ? t.token_id.slice(0, 8) + "…" : "none"}` +
+        `<br/>` +
+        `int=<span class="badge ${badgeClass(t.internalAction)}">${t.internalAction}</span> ` +
+        `pub=<span class="badge ${badgeClass(t.publicAction)}">${t.publicAction}</span>` +
+        `<div class="policy-sum">${esc(t.policySummary || "")}</div>` +
+        `</div>`
     )
-    .join("<br/>");
+    .join("");
 }
 
-function boxEl(t, action) {
+function badgeClass(action) {
+  if (action === "allow") return "allow";
+  if (action === "blur" || action === "transform_export") return "blur";
+  return "deny";
+}
+
+function boxEl(t, action, side) {
   const el = document.createElement("div");
   el.className = "person-box";
   if (action === "blur") el.classList.add("blurred");
-  if (action === "deny") el.classList.add("denied");
+  if (action === "deny" || action === "block_export") el.classList.add("denied");
+  if (action === "allow") el.classList.add("allowed");
   el.style.left = t.x + "%";
   el.style.top = t.y + "%";
   el.style.width = t.w + "%";
   el.style.height = t.h + "%";
   const tag = document.createElement("div");
-  tag.className = "tag";
+  tag.className = "tag tag-" + badgeClass(action);
   tag.textContent = `${t.label} · ${action}`;
   el.appendChild(tag);
+  const sum = document.createElement("div");
+  sum.className = "box-policy";
+  sum.textContent = t.policySummary || `${side}: ${action}`;
+  el.appendChild(sum);
   return el;
+}
+
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, (c) =>
+    ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c])
+  );
 }
 
 async function captureClip() {
   const track = tracks.find((t) => t.token_id) || tracks[0];
   if (!track) {
-    alert("Add a person track first.");
+    camStatus.textContent = "Add a person track first.";
     return;
   }
   const res = await fetch(`${API}/clips`, {
@@ -196,9 +275,55 @@ async function captureClip() {
     }),
   });
   const clip = await res.json();
-  camStatus.textContent = `Captured clip stub ${clip.clip_id?.slice(0, 8)}… — manage export on Console.`;
+  camStatus.textContent = `Captured clip ${clip.clip_id?.slice(0, 8)}… — open Console to change policy & re-export.`;
 }
 
-// Demo-friendly: one unknown person on load with fallback still
-useFallback();
-addTrack({ label: "Unknown", subject: "unknown" });
+async function maybeAutoBindFromQuery() {
+  const params = new URLSearchParams(location.search);
+  const bindId = params.get("bind");
+  if (!bindId) return;
+  const res = await fetch(`${API}/pass/${bindId}`);
+  if (!res.ok) {
+    camStatus.textContent = `Bind link token not found: ${bindId.slice(0, 8)}…`;
+    return;
+  }
+  const signed = await res.json();
+  applyBind(bindId, signed);
+  // Clean URL without reload
+  history.replaceState({}, "", "/camera");
+}
+
+async function watchDemoEpoch() {
+  try {
+    const res = await fetch(`${API}/demo/epoch`);
+    const data = await res.json();
+    if (data.epoch !== demoEpoch) {
+      demoEpoch = data.epoch;
+      // Re-seed: clear local tracks, one unknown
+      tracks.length = 0;
+      addTrack({ label: "Unknown", subject: "unknown" });
+      camStatus.textContent = "Demo reset — re-seeded one unknown person.";
+    }
+  } catch {
+    /* ignore */
+  }
+}
+
+async function boot() {
+  // Never blank: show still immediately, then try camera
+  useFallback("Starting camera…");
+  await startCamera({ manual: false });
+  addTrack({ label: "Unknown", subject: "unknown" });
+  ensurePoll();
+  await maybeAutoBindFromQuery();
+  try {
+    const res = await fetch(`${API}/demo/epoch`);
+    const data = await res.json();
+    demoEpoch = data.epoch;
+  } catch {
+    /* ignore */
+  }
+  setInterval(watchDemoEpoch, 2000);
+}
+
+boot();

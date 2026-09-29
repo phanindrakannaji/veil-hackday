@@ -23,15 +23,22 @@
       <canvas id="qr"></canvas>
       <div class="subject" id="subject">No pass yet</div>
       <div class="mono small muted" id="tokenMeta"></div>
+      <div class="token-copy-row">
+        <code class="mono small" id="tokenFull">—</code>
+        <button class="btn" id="btnCopy" type="button">Copy</button>
+      </div>
       <div class="small" style="margin-top:0.5rem">
         Public livestream:
         <span class="badge" id="publicBadge">—</span>
       </div>
+      <p class="small muted" style="margin-top:0.75rem;text-align:center">
+        Camera can tap <strong>Scan / bind latest Pass</strong>, or scan this QR to open Camera with auto-bind.
+      </p>
     </div>
 
     <div class="card" style="margin-top:1rem">
       <h2>My policy (public livestream)</h2>
-      <p class="small">Tap to update rights. Camera Public pane reacts within ~1.5s.</p>
+      <p class="small">Tap to update rights. Camera Public pane reacts within ~1s.</p>
       <div class="btn-row">
         <button class="btn good" id="btnAllow">Allow</button>
         <button class="btn warn" id="btnBlur">Blur</button>

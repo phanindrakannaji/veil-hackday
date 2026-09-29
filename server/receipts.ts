@@ -2,7 +2,7 @@
  * Decision receipts — memory + JSON file under data/.
  */
 
-import { appendFileSync, mkdirSync, readFileSync, existsSync } from "node:fs";
+import { appendFileSync, mkdirSync, readFileSync, existsSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -38,6 +38,12 @@ export function writeReceipt(r: Omit<Receipt, "ts"> & { ts?: string }): Receipt 
 
 export function listReceipts(): Receipt[] {
   return [...memory];
+}
+
+export function clearReceipts(): void {
+  memory.length = 0;
+  ensureDataDir();
+  writeFileSync(RECEIPTS_FILE, "", "utf8");
 }
 
 export function loadReceiptsFromDisk(): Receipt[] {

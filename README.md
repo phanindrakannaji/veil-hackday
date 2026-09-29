@@ -1,126 +1,63 @@
 # Veil Hack Day Demo
 
-**Veil** = policy / rights layer for cameras.
-
-> Optional Fabric one-liner: this scaffold is a standalone hack-day slice of the broader Veil / Fabric camera-rights narrative — no multi-repo wiring required.
-
-Keep it simple. One Node server on the MacBook. iPhone + iPad open LAN URLs.
-
----
-
-## Devices → URLs
+**Veil** = policy / rights layer for cameras. One Node server. MacBook + iPhone + iPad on the same LAN.
 
 | Device | Role | URL |
 |--------|------|-----|
-| **MacBook Pro** | Capture station (Internal + Public) | `http://<LAN-IP>:8787/camera` |
-| **iPhone 16 Pro** | Attendee Veil Pass (QR + toggles) | `http://<LAN-IP>:8787/pass` |
-| **iPad Pro** | Organizer console | `http://<LAN-IP>:8787/console` |
-
-All devices on the **same Wi‑Fi**. MacBook hosts the server.
-
----
-
-## How to run (5 min)
+| **MacBook** | Camera (Internal + Public) | `http://localhost:8787/camera` |
+| **iPhone** | Veil Pass | `http://<LAN-IP>:8787/pass` |
+| **iPad** | Console | `http://<LAN-IP>:8787/console` |
 
 ```bash
-cd veil-hackday
-npm install
-npm run dev
+cd veil-hackday && npm install && npm run dev
 ```
 
-Server prints LAN URL, e.g.:
-
-```
-Local:   http://localhost:8787
-LAN:     http://192.168.1.42:8787
-```
-
-Open those paths on each device.
-
-### Camera permissions
-
-- `getUserMedia` needs a **secure context**: `https://` or `http://localhost`.
-- On **LAN HTTP** from iPhone/iPad/Mac to the MacBook IP, Chrome/Safari may block the camera.
-- **Hack-day options:**
-  1. Open Camera page on the MacBook via `http://localhost:8787/camera` (camera works).
-  2. Or click **Use sample still** (built-in backup) — demo still works without a webcam.
-  3. Optional: tunnel with something like `npx localtunnel` / ngrok if you need phone→camera (not required for this script).
+Server prints Local + LAN URLs. Default port **8787**.
 
 ---
 
-## Demo script (~60s)
+## 60s script (hardened bind)
 
-1. **MacBook** → `/camera` → Start camera *or* Use sample still → you already have an **Unknown** person track → **Public** pane shows **blur**.
-2. **iPhone** → `/pass` → big QR (token). Tap **Allow** for public livestream.
-3. **MacBook** → paste `token_id` from Console (or from Pass meta / issue on iPad) → **Bind scanned Pass** → Public pane flips to **live / allow** within ~1.5s.
-4. **MacBook** → **Capture clip stub**.
-5. **iPad** → `/console` → deny promo (or leave promo off) → **Try export** → **blocked** or **transformed** + receipt appears. Toggle **Allow promo** → export **allowed**. Show **Media Rights Graph**.
+1. **MacBook** `/camera` — camera or sample still; **Unknown** track; **PUBLIC** shows **blur**.
+2. **iPhone** `/pass` — Pass issues itself (token + Copy + QR). Tap **Allow**.
+3. **MacBook** → **Scan / bind latest Pass** (or open QR URL `…/camera?bind=<token_id>`). **PUBLIC** flips to **allow** within ~1s.
+4. **MacBook** → **Capture clip**.
+5. **iPad** `/console` → **Latest clip** → **Deny promo → re-export** (blocked/transformed + receipt) → **Allow promo → re-export** (allowed). Optional: Pass **Revoke** → PUBLIC goes **deny** on next tick.
 
-Narrative covered:
-
-1. Enter frame → unknown / opt-out → blurred on Public  
-2. Present ephemeral credential → scoped policy flips Public live  
-3. Change policy after capture → export blocked/transformed + decision receipt  
+Console **Issue Pass** sets the current bindable token. **Demo reset** clears tokens/clips/receipts; Camera re-seeds one Unknown.
 
 ---
 
-## What works live vs stub
+## If X breaks → Y
 
-| Piece | Status |
-|-------|--------|
-| Policy tokens (HMAC-signed JSON) | **Live** |
-| decide(token, audience) → allow/blur/deny/export | **Live** (+ unit tests) |
-| Pass QR + Allow/Blur/Deny + Revoke | **Live** |
-| Camera dual panes + manual person tracks | **Live** (manual boxes, not CV) |
-| getUserMedia | **Live on localhost**; LAN HTTP may need backup still |
-| Sample still backup | **Live** |
-| Bind token → re-decide on poll | **Live** |
-| Clip stubs + post-capture export | **Live** (no real video file) |
-| Receipts → memory + `data/receipts.jsonl` | **Live** |
-| Media Rights Graph | **Live** (JSON list view) |
-| Face detection / re-ID / SAM2 / C2PA | **Skipped** (by design) |
+| Problem | Fix |
+|---------|-----|
+| Camera blocked / blank | Banner + sample still auto-loads. Or click **Use sample still**. Prefer `localhost` on Mac for getUserMedia. |
+| Wrong Wi‑Fi / can’t reach Pass/Console | Same LAN as Mac. Use the printed `LAN: http://…:8787` URL, not another machine’s IP. |
+| Stale / wrong token on bind | Console **Issue Pass** or Pass **Get new Pass**, then Camera **Scan / bind latest Pass**. Or **Demo reset** and re-run script. |
+| PUBLIC stuck on blur after Allow | Wait ≤1s (800ms poll). Confirm Pass shows Allow badge, then bind again. |
+| Clip / export not showing | Capture on Camera first; Console **Latest clip** refreshes every 2s. |
+| Need clean slate mid-demo | Console **Demo reset** or `POST /api/demo/reset`. |
 
 ---
 
 ## Scripts
 
 ```bash
-npm run dev       # start server (tsx watch)
-npm test          # policy unit tests
-npm run build     # typecheck (tsc --noEmit)
-npm start         # start without watch
+npm run dev    # tsx watch
+npm test       # policy unit tests
+npm run build  # tsc --noEmit
+npm start
 ```
 
-Default port: **8787** (`PORT` / `HOST` env overrides). HMAC secret: `VEIL_HMAC_SECRET` (demo default is fine for LAN).
-
----
-
-## Layout
-
-```
-veil-hackday/
-  README.md
-  package.json
-  server/          # Express: policy, credentials, tracks/receipts, rights graph
-  web/             # /camera /pass /console
-  data/            # receipts.jsonl (gitignored contents)
-  tests/           # policy decision tests
-```
+HMAC secret: `VEIL_HMAC_SECRET` (demo default OK on LAN).
 
 ---
 
 ## API (quick)
 
-- `POST /api/pass/issue` — create Pass  
-- `POST /api/pass/:id/public` `{ mode: allow|blur|deny }`  
-- `POST /api/pass/:id/revoke`  
-- `PATCH /api/pass/:id` — permissions / treatment  
-- `POST /api/decide` `{ token_id?, track_id, audience }`  
-- `POST /api/clips` · `POST /api/clips/:id/export`  
-- `GET /api/receipts` · `GET /api/rights-graph`  
+- `POST /api/pass/issue` · `GET /api/pass/latest` · `POST /api/pass/:id/public` · `POST /api/pass/:id/revoke`
+- `POST /api/decide` · `POST /api/clips` · `POST /api/clips/:id/export` · `POST /api/clips/:id/policy-export`
+- `GET /api/receipts` · `GET /api/rights-graph` · `POST /api/demo/reset` · `GET /api/demo/epoch`
 
----
-
-## Explicitly out of scope
-
-SAM2, real re-ID, C2PA, smart glasses, cloud auth, microservices, blockchain, Fabric multi-repo, BLE, legal automation.
+**Out of scope:** SAM2, CV re-ID, C2PA, blockchain, HTTPS tunnels for happy path, microservices.

@@ -13,6 +13,8 @@ import {
 } from "./policy.js";
 
 const tokens = new Map<string, SignedToken>();
+/** Most recently issued token id — Camera "bind latest" uses this. */
+let latestIssuedId: string | null = null;
 
 export interface IssuePassInput {
   event_id?: string;
@@ -41,6 +43,7 @@ export function issuePass(input: IssuePassInput = {}): SignedToken {
   };
   const signed = signToken(payload);
   tokens.set(payload.token_id, signed);
+  latestIssuedId = payload.token_id;
   return signed;
 }
 
@@ -52,12 +55,30 @@ export function listTokens(): SignedToken[] {
   return Array.from(tokens.values());
 }
 
+/** Latest non-revoked issued pass (bind target for one-tap Camera bind). */
+export function getLatestActive(): SignedToken | null {
+  if (latestIssuedId) {
+    const t = tokens.get(latestIssuedId);
+    if (t && !t.payload.revoked) return t;
+  }
+  // Fallback: most recently valid_from among active
+  const active = Array.from(tokens.values())
+    .filter((t) => !t.payload.revoked)
+    .sort(
+      (a, b) =>
+        new Date(b.payload.valid_from).getTime() -
+        new Date(a.payload.valid_from).getTime()
+    );
+  return active[0] ?? null;
+}
+
 export function revokeToken(tokenId: string): SignedToken | null {
   const existing = tokens.get(tokenId);
   if (!existing) return null;
   const updated: PolicyToken = { ...existing.payload, revoked: true };
   const signed = signToken(updated);
   tokens.set(tokenId, signed);
+  if (latestIssuedId === tokenId) latestIssuedId = null;
   return signed;
 }
 
@@ -81,4 +102,9 @@ export function updateTokenPolicy(
   const signed = signToken(updated);
   tokens.set(tokenId, signed);
   return signed;
+}
+
+export function clearAllTokens(): void {
+  tokens.clear();
+  latestIssuedId = null;
 }

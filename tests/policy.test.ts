@@ -1,5 +1,6 @@
 /**
  * Unit tests for policy decide(token, audience) → allow|blur|deny|…
+ * Plus revoke path and export-after-policy-change scenarios.
  */
 
 import { describe, it } from "node:test";
@@ -90,7 +91,26 @@ describe("decide — revoked / expired", () => {
   it("revoked → deny public, block export", () => {
     const t = makeToken({ revoked: true });
     assert.equal(decide(t, "public").action, "deny");
+    assert.equal(decide(t, "public").reason, "revoked");
     assert.equal(decide(t, "export").action, "block_export");
+    assert.equal(decide(t, "export").reason, "revoked");
+  });
+
+  it("revoked → deny internal (not allow)", () => {
+    const t = makeToken({ revoked: true });
+    assert.equal(decide(t, "internal").action, "deny");
+    assert.equal(decide(t, "internal").reason, "revoked");
+  });
+
+  it("allow then revoke flips public to deny", () => {
+    const live = makeToken({
+      permissions: { ...defaultPermissions(), public_livestream: true },
+      treatment: { public: "allow", internal: "allow" },
+    });
+    assert.equal(decide(live, "public").action, "allow");
+    const revoked = { ...live, revoked: true };
+    assert.equal(decide(revoked, "public").action, "deny");
+    assert.equal(decide(revoked, "public").reason, "revoked");
   });
 
   it("expired → blur public", () => {
@@ -135,6 +155,56 @@ describe("decide — export / post-capture", () => {
       },
     });
     assert.equal(decide(t, "export").action, "allow");
+  });
+
+  it("export after policy change: retention-only → promo on → allow", () => {
+    const before = makeToken({
+      permissions: {
+        ...defaultPermissions(),
+        promotional_use: false,
+        retention: true,
+      },
+    });
+    assert.equal(decide(before, "export").action, "transform_export");
+    assert.equal(decide(before, "export").reason, "retention_only");
+
+    const after = {
+      ...before,
+      permissions: { ...before.permissions, promotional_use: true },
+    };
+    assert.equal(decide(after, "export").action, "allow");
+    assert.equal(decide(after, "export").reason, "export_allowed");
+  });
+
+  it("export after policy change: promo on → promo off → transform", () => {
+    const before = makeToken({
+      permissions: {
+        ...defaultPermissions(),
+        promotional_use: true,
+        retention: true,
+      },
+    });
+    assert.equal(decide(before, "export").action, "allow");
+
+    const after = {
+      ...before,
+      permissions: { ...before.permissions, promotional_use: false },
+    };
+    assert.equal(decide(after, "export").action, "transform_export");
+  });
+
+  it("export after revoke → block_export", () => {
+    const before = makeToken({
+      permissions: {
+        ...defaultPermissions(),
+        promotional_use: true,
+        retention: true,
+      },
+    });
+    assert.equal(decide(before, "export").action, "allow");
+    const revoked = { ...before, revoked: true };
+    assert.equal(decide(revoked, "export").action, "block_export");
+    assert.equal(decide(revoked, "export").reason, "revoked");
   });
 });
 

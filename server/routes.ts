@@ -9,18 +9,25 @@ import {
   listTokens,
   revokeToken,
   updateTokenPolicy,
+  getLatestActive,
+  clearAllTokens,
 } from "./credentials.js";
 import { decide, verifyToken, type Audience } from "./policy.js";
-import { writeReceipt, listReceipts } from "./receipts.js";
+import { writeReceipt, listReceipts, clearReceipts } from "./receipts.js";
 import {
   createClip,
   listClips,
   getClip,
+  getLatestClip,
   updateClipExport,
   getRightsGraph,
+  clearClipsAndEdges,
 } from "./rights-graph.js";
 
 export const api = Router();
+
+/** Bumped on demo reset so Camera can re-seed an unknown track. */
+let demoEpoch = 1;
 
 // --- Pass / credentials ---
 
@@ -31,6 +38,13 @@ api.post("/pass/issue", (req: Request, res: Response) => {
 
 api.get("/pass", (_req, res) => {
   res.json(listTokens());
+});
+
+/** One-tap bind target: most recently issued active pass. */
+api.get("/pass/latest", (_req, res) => {
+  const t = getLatestActive();
+  if (!t) return res.status(404).json({ error: "no_active_pass" });
+  res.json(t);
 });
 
 api.get("/pass/:tokenId", (req, res) => {
@@ -147,6 +161,12 @@ api.get("/clips", (_req, res) => {
   res.json(listClips());
 });
 
+api.get("/clips/latest", (_req, res) => {
+  const clip = getLatestClip();
+  if (!clip) return res.status(404).json({ error: "no_clips" });
+  res.json(clip);
+});
+
 api.post("/clips/:clipId/export", (req, res) => {
   const clip = getClip(req.params.clipId);
   if (!clip) return res.status(404).json({ error: "not_found" });
@@ -168,6 +188,74 @@ api.post("/clips/:clipId/export", (req, res) => {
     reason: decision.reason,
   });
   res.json({ clip: updated, decision });
+});
+
+/**
+ * Change policy on a clip's token then re-export in one shot.
+ * body: { promotional_use?: boolean }
+ */
+api.post("/clips/:clipId/policy-export", (req, res) => {
+  const clip = getClip(req.params.clipId);
+  if (!clip) return res.status(404).json({ error: "not_found" });
+
+  const promo = req.body?.promotional_use;
+  if (typeof promo === "boolean" && clip.token_id && clip.token_id !== "none") {
+    const patched = updateTokenPolicy(clip.token_id, {
+      permissions: { promotional_use: promo },
+    });
+    if (patched) {
+      writeReceipt({
+        token_id: clip.token_id,
+        track_id: clip.track_id,
+        audience: "policy",
+        action: "policy_update",
+        reason: JSON.stringify({ promotional_use: promo }),
+      });
+    }
+  }
+
+  const signed = getToken(clip.token_id);
+  const decision = decide(signed?.payload ?? null, "export");
+
+  let status: "allowed" | "blocked" | "transformed" = "blocked";
+  if (decision.action === "allow") status = "allowed";
+  else if (decision.action === "transform_export") status = "transformed";
+  else status = "blocked";
+
+  const updated = updateClipExport(clip.clip_id, status, decision.action);
+  writeReceipt({
+    token_id: clip.token_id,
+    track_id: clip.track_id,
+    audience: "export",
+    action: decision.action,
+    reason: decision.reason,
+  });
+  res.json({ clip: updated, decision });
+});
+
+// --- Demo reset ---
+
+api.get("/demo/epoch", (_req, res) => {
+  res.json({ epoch: demoEpoch });
+});
+
+api.post("/demo/reset", (_req, res) => {
+  clearAllTokens();
+  clearClipsAndEdges();
+  clearReceipts();
+  demoEpoch += 1;
+  writeReceipt({
+    token_id: "none",
+    track_id: "n/a",
+    audience: "demo",
+    action: "reset",
+    reason: `epoch_${demoEpoch}`,
+  });
+  res.json({
+    ok: true,
+    epoch: demoEpoch,
+    note: "Cleared tokens/clips/receipts. Camera will re-seed one unknown person.",
+  });
 });
 
 // --- Health / LAN info ---

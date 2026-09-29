@@ -64,6 +64,15 @@ export function getClip(clipId: string): ClipStub | undefined {
   return clips.get(clipId);
 }
 
+export function getLatestClip(): ClipStub | null {
+  const all = listClips();
+  if (!all.length) return null;
+  return all.sort(
+    (a, b) =>
+      new Date(b.captured_at).getTime() - new Date(a.captured_at).getTime()
+  )[0];
+}
+
 export function updateClipExport(
   clipId: string,
   status: ClipStub["export_status"],
@@ -88,4 +97,9 @@ export function updateClipExport(
 
 export function getRightsGraph(): RightsEdge[] {
   return [...edges];
+}
+
+export function clearClipsAndEdges(): void {
+  clips.clear();
+  edges.length = 0;
 }

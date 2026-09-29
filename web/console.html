@@ -19,7 +19,7 @@
     <div class="grid-2">
       <div class="card stack">
         <h2>Issue Pass</h2>
-        <p class="small">Creates an ephemeral credential for an attendee.</p>
+        <p class="small">Creates the current bindable Pass (Camera → Scan / bind latest).</p>
         <label class="small muted">Event id</label>
         <input id="eventId" value="hackday-demo" />
         <label class="small muted">TTL (minutes)</label>
@@ -29,15 +29,28 @@
       </div>
 
       <div class="card stack">
-        <h2>Audience views</h2>
-        <p class="small">Quick reference — open Camera for live dual panes.</p>
-        <ul class="small muted" style="margin:0;padding-left:1.2rem">
-          <li><strong>Internal</strong> — operator / less redaction</li>
-          <li><strong>Public</strong> — enforce Pass treatment</li>
-          <li><strong>Export</strong> — post-capture rights check</li>
-        </ul>
+        <h2>Demo controls</h2>
+        <p class="small">Reset clears tokens, clips, and receipts. Camera re-seeds one unknown.</p>
+        <button class="btn bad block" id="btnReset">Demo reset</button>
         <a class="btn block" href="/camera">Open Camera</a>
+        <ul class="small muted" style="margin:0;padding-left:1.2rem">
+          <li><strong>INTERNAL</strong> — operator view</li>
+          <li><strong>PUBLIC</strong> — Pass treatment enforced</li>
+          <li><strong>Export</strong> — post-capture rights</li>
+        </ul>
       </div>
+    </div>
+
+    <div class="card stack" id="latestClipCard">
+      <h2>Latest clip · change policy &amp; re-export</h2>
+      <p class="small">Capture from Camera, then one tap here — no hunting IDs.</p>
+      <div id="latestClip" class="small muted">No clips yet. Capture from Camera.</div>
+      <div class="btn-row" id="latestClipActions" hidden>
+        <button class="btn warn" id="btnDenyPromoExport">Deny promo → re-export</button>
+        <button class="btn good" id="btnAllowPromoExport">Allow promo → re-export</button>
+        <button class="btn primary" id="btnExportOnly">Re-export only</button>
+      </div>
+      <div class="mono small" id="exportResult"></div>
     </div>
 
     <div class="card stack">
@@ -46,9 +59,8 @@
     </div>
 
     <div class="card stack">
-      <h2>Clips · change policy after capture</h2>
-      <p class="small">Update Pass permissions, then try export — blocked / transformed + receipt.</p>
-      <div id="clipTable" class="small muted">No clips yet. Capture from Camera.</div>
+      <h2>All clips</h2>
+      <div id="clipTable" class="small muted">No clips yet.</div>
     </div>
 
     <div class="grid-2">

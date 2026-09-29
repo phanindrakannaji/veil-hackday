@@ -4,11 +4,17 @@
 
 const API = "/api";
 
+let latestClipId = null;
+
 document.getElementById("btnIssue").onclick = issuePass;
+document.getElementById("btnReset").onclick = demoReset;
 document.getElementById("btnRefreshReceipts").onclick = () => {
   loadReceipts();
   loadGraph();
 };
+document.getElementById("btnDenyPromoExport").onclick = () => policyExport(false);
+document.getElementById("btnAllowPromoExport").onclick = () => policyExport(true);
+document.getElementById("btnExportOnly").onclick = () => exportOnly();
 
 async function issuePass() {
   const event_id = document.getElementById("eventId").value || "hackday-demo";
@@ -31,10 +37,21 @@ async function issuePass() {
   const signed = await res.json();
   const out = document.getElementById("issuedOut");
   out.innerHTML =
-    `Issued <strong>${signed.payload.subject}</strong><br/>` +
+    `Issued <strong>${esc(signed.payload.subject)}</strong> — now the bindable Pass<br/>` +
     `token_id: <code>${signed.payload.token_id}</code><br/>` +
-    `<span class="muted">Copy token_id into Camera “Bind scanned Pass”, or open /pass on phone (self-issue also works).</span>`;
+    `<span class="muted">On Camera tap <strong>Scan / bind latest Pass</strong> (or open /pass on phone).</span>`;
   await loadPasses();
+}
+
+async function demoReset() {
+  if (!confirm("Clear all tokens, clips, and receipts?")) return;
+  const res = await fetch(`${API}/demo/reset`, { method: "POST" });
+  const data = await res.json();
+  document.getElementById("issuedOut").textContent =
+    `Reset ok (epoch ${data.epoch}). Camera will re-seed Unknown.`;
+  document.getElementById("exportResult").textContent = "";
+  latestClipId = null;
+  await refreshAll();
 }
 
 async function loadPasses() {
@@ -90,12 +107,65 @@ async function loadPasses() {
   });
 }
 
+async function loadLatestClip() {
+  const el = document.getElementById("latestClip");
+  const actions = document.getElementById("latestClipActions");
+  const res = await fetch(`${API}/clips/latest`);
+  if (!res.ok) {
+    latestClipId = null;
+    el.textContent = "No clips yet. Capture from Camera.";
+    actions.hidden = true;
+    return;
+  }
+  const c = await res.json();
+  latestClipId = c.clip_id;
+  el.innerHTML =
+    `<strong>${esc(c.label)}</strong><br/>` +
+    `person=${esc(c.subject)} · token=${c.token_id.slice(0, 8)}… · v${c.policy_version}<br/>` +
+    `export=<span class="badge ${exportBadge(c.export_status)}">${c.export_status}</span>`;
+  actions.hidden = false;
+}
+
+function exportBadge(status) {
+  if (status === "blocked") return "deny";
+  if (status === "allowed") return "allow";
+  return "blur";
+}
+
+async function policyExport(promotional_use) {
+  if (!latestClipId) return;
+  const res = await fetch(`${API}/clips/${latestClipId}/policy-export`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ promotional_use }),
+  });
+  const data = await res.json();
+  showExportResult(data);
+  await refreshAll();
+}
+
+async function exportOnly() {
+  if (!latestClipId) return;
+  const res = await fetch(`${API}/clips/${latestClipId}/export`, { method: "POST" });
+  const data = await res.json();
+  showExportResult(data);
+  await refreshAll();
+}
+
+function showExportResult(data) {
+  const d = data.decision;
+  const status = data.clip?.export_status ?? "?";
+  document.getElementById("exportResult").innerHTML =
+    `Result: <span class="badge ${exportBadge(status)}">${status}</span> · ` +
+    `action=<strong>${esc(d.action)}</strong> · reason=${esc(d.reason)} · receipt written`;
+}
+
 async function loadClips() {
   const res = await fetch(`${API}/clips`);
   const clips = await res.json();
   const el = document.getElementById("clipTable");
   if (!clips.length) {
-    el.textContent = "No clips yet. Capture from Camera.";
+    el.textContent = "No clips yet.";
     return;
   }
   el.innerHTML =
@@ -107,7 +177,7 @@ async function loadClips() {
         <td>${esc(c.subject)}</td>
         <td class="mono">${c.token_id.slice(0, 8)}…</td>
         <td>${c.policy_version}</td>
-        <td><span class="badge ${c.export_status === "blocked" ? "deny" : c.export_status === "allowed" ? "allow" : "blur"}">${c.export_status}</span></td>
+        <td><span class="badge ${exportBadge(c.export_status)}">${c.export_status}</span></td>
         <td><button class="btn primary" data-export="${c.clip_id}">Try export</button></td>
       </tr>`
       )
@@ -118,7 +188,8 @@ async function loadClips() {
     btn.onclick = async () => {
       const res = await fetch(`${API}/clips/${btn.dataset.export}/export`, { method: "POST" });
       const data = await res.json();
-      alert(`Export decision: ${data.decision.action} (${data.decision.reason})`);
+      latestClipId = btn.dataset.export;
+      showExportResult(data);
       await refreshAll();
     };
   });
@@ -155,8 +226,14 @@ function esc(s) {
 }
 
 async function refreshAll() {
-  await Promise.all([loadPasses(), loadClips(), loadReceipts(), loadGraph()]);
+  await Promise.all([
+    loadPasses(),
+    loadLatestClip(),
+    loadClips(),
+    loadReceipts(),
+    loadGraph(),
+  ]);
 }
 
 refreshAll();
-setInterval(refreshAll, 3000);
+setInterval(refreshAll, 2000);
