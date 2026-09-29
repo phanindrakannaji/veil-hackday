@@ -3,11 +3,195 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Veil · Cue card</title>
+  <title>Veil · Cue</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@450;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/shared.css" />
+  <style>
+    .cue-controls {
+      position: sticky;
+      top: 4.5rem;
+      z-index: 30;
+      background: var(--panel-solid);
+      border: 1px solid var(--border-strong);
+      border-radius: var(--radius-lg);
+      padding: 1.2rem 1.3rem;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 8px 28px rgba(0, 0, 0, 0.3);
+    }
+    .timer-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+    .timer-display {
+      font-size: 2.8rem;
+      font-weight: 800;
+      font-variant-numeric: tabular-nums;
+      font-family: var(--font-mono);
+      color: var(--accent);
+      letter-spacing: -0.02em;
+      text-shadow: 0 0 20px rgba(56, 189, 248, 0.3);
+    }
+    .timer-display.running {
+      color: var(--good);
+      text-shadow: 0 0 20px rgba(52, 211, 153, 0.3);
+    }
+    .timer-controls {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+    .timer-controls .btn {
+      min-width: 90px;
+    }
+    .progress-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      font-size: 0.85rem;
+      color: var(--muted);
+      font-weight: 600;
+    }
+    .progress-block {
+      padding: 0.3rem 0.75rem;
+      border-radius: var(--radius-pill);
+      background: rgba(56, 189, 248, 0.12);
+      border: 1px solid rgba(56, 189, 248, 0.3);
+      color: var(--accent);
+      font-weight: 700;
+      font-size: 0.75rem;
+      letter-spacing: 0.08em;
+    }
+    .progress-block.fabric {
+      background: rgba(167, 139, 250, 0.12);
+      border-color: rgba(167, 139, 250, 0.3);
+      color: var(--blur);
+    }
+    .nav-row {
+      display: flex;
+      gap: 0.5rem;
+      margin-top: 1rem;
+    }
+    .nav-row .btn {
+      flex: 1;
+      font-size: 1.1rem;
+      min-height: 3rem;
+    }
+    .beat-display {
+      min-height: 320px;
+    }
+    .beat-card {
+      background: linear-gradient(155deg, rgba(56, 189, 248, 0.08) 0%, transparent 48%), var(--panel);
+      border: 1px solid var(--border-accent);
+      border-radius: var(--radius-lg);
+      padding: 1.8rem 1.6rem;
+      box-shadow: var(--inner-glow), 0 0 0 1px rgba(56, 189, 248, 0.08), 0 12px 36px rgba(0, 0, 0, 0.3);
+    }
+    .beat-card.fabric {
+      background: linear-gradient(155deg, rgba(167, 139, 250, 0.08) 0%, transparent 48%), var(--panel);
+      border-color: rgba(167, 139, 250, 0.3);
+      box-shadow: var(--inner-glow), 0 0 0 1px rgba(167, 139, 250, 0.08), 0 12px 36px rgba(0, 0, 0, 0.3);
+    }
+    .beat-target {
+      color: var(--muted-dim);
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 0.3rem;
+    }
+    .beat-title {
+      font-size: 1.8rem;
+      font-weight: 700;
+      letter-spacing: -0.03em;
+      color: var(--text-bright);
+      margin: 0 0 1rem;
+    }
+    .beat-talk {
+      margin: 1.2rem 0;
+    }
+    .beat-talk-line {
+      font-size: 1.15rem;
+      line-height: 1.5;
+      color: var(--text);
+      margin: 0.7rem 0;
+      font-weight: 500;
+      letter-spacing: -0.01em;
+    }
+    .beat-action {
+      margin-top: 1.5rem;
+      padding: 1rem 1.1rem;
+      background: rgba(56, 189, 248, 0.08);
+      border: 1px solid rgba(56, 189, 248, 0.25);
+      border-radius: var(--radius);
+      border-left: 4px solid var(--accent);
+    }
+    .beat-action-label {
+      font-size: 0.7rem;
+      font-weight: 800;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 0.4rem;
+    }
+    .beat-action-text {
+      font-size: 0.95rem;
+      line-height: 1.45;
+      color: var(--text);
+      margin: 0;
+    }
+    .qa-section {
+      margin-top: 1.5rem;
+    }
+    .qa-toggle {
+      cursor: pointer;
+      user-select: none;
+      padding: 0.8rem 1rem;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      background: rgba(255, 255, 255, 0.03);
+      transition: all 0.15s;
+    }
+    .qa-toggle:hover {
+      background: rgba(255, 255, 255, 0.06);
+      border-color: var(--border-strong);
+    }
+    .qa-toggle h3 {
+      margin: 0;
+      font-size: 1rem;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .qa-toggle h3::before {
+      content: "▶";
+      font-size: 0.7rem;
+      transition: transform 0.2s;
+    }
+    .qa-toggle.open h3::before {
+      transform: rotate(90deg);
+    }
+    .qa-content {
+      display: none;
+      margin-top: 0.75rem;
+      padding-top: 0.75rem;
+      border-top: 1px solid var(--border);
+    }
+    .qa-content.open {
+      display: block;
+    }
+    @media (max-width: 700px) {
+      .timer-display { font-size: 2.2rem; }
+      .beat-title { font-size: 1.4rem; }
+      .beat-talk-line { font-size: 1rem; }
+      .timer-row { flex-direction: column; align-items: flex-start; }
+    }
+  </style>
 </head>
 <body>
   <div class="topbar">
@@ -20,96 +204,349 @@
       <a class="active" href="/cue">Cue</a>
     </nav>
   </div>
-  <div class="wrap stack">
-    <div>
-      <span class="section-label">Presenter script</span>
-      <h1>~5 min pitch · live demo</h1>
-      <p class="muted small">Thesis: programmable consent for cameras — Pass → bind → enforce → rights graph → revoke. Not “AI blur as the product.”</p>
+
+  <div class="wrap">
+    <div style="margin-bottom: 1.5rem;">
+      <span class="section-label">Timed Demo</span>
+      <h1>5-minute Hack Day click-through</h1>
+      <p class="muted small">4 min Veil + 1 min Fabric · Navigate with Next/Prev or keyboard (→/← or Space)</p>
     </div>
 
-    <div class="card stack">
-      <span class="section-label">Prep</span>
-      <h2>Before you start</h2>
-      <ol class="cue-list small">
-        <li>Mac Terminal: Veil server running · keep that window open</li>
-        <li>Console → <strong>Start clean demo</strong> (or Wipe everything)</li>
-        <li>Mac <code>/camera</code> · iPhone <code>/pass</code> · iPad <code>/console</code> · this tab <code>/cue</code></li>
-        <li>Camera: QR scanning is automatic when camera is live (or drag INTERNAL box onto your face)</li>
-      </ol>
+    <div class="cue-controls">
+      <div class="timer-row">
+        <div class="timer-display" id="timer">0:00</div>
+        <div class="timer-controls">
+          <button class="btn good" id="startBtn" onclick="startTimer()">Start</button>
+          <button class="btn ghost" id="resetBtn" onclick="resetTimer()">Reset</button>
+        </div>
+      </div>
+      <div class="progress-row">
+        <div>
+          <span id="beatProgress">Beat 0 of 12</span>
+        </div>
+        <div class="progress-block" id="blockIndicator">VEIL</div>
+      </div>
+      <div class="nav-row">
+        <button class="btn" onclick="prevBeat()" id="prevBtn">← Prev</button>
+        <button class="btn primary" onclick="nextBeat()" id="nextBtn">Next →</button>
+      </div>
     </div>
 
-    <div class="card stack">
-      <span class="section-label">Live clock</span>
-      <h2>Timed beats</h2>
-      <div class="cue-step"><span class="cue-time">0:00</span> <span class="say">“Cameras capture by default. Veil makes consent programmable.”</span>
-        <div class="do">Point at dual panes — INTERNAL clear, PUBLIC already blurring Unknown.</div>
+    <div class="beat-display">
+      <div class="beat-card" id="beatCard">
+        <div class="beat-target" id="beatTarget">TARGET 0:00</div>
+        <h2 class="beat-title" id="beatTitle">Click Start to begin</h2>
+        <div class="beat-talk" id="beatTalk"></div>
+        <div id="beatAction"></div>
       </div>
-      <div class="cue-step"><span class="cue-time">0:30</span> <span class="say">“Attendee issues a Veil Pass — a short-lived credential, not a face ID.”</span>
-        <div class="do">iPhone: Pass shows · tap <strong>Allow</strong>.</div>
-      </div>
-      <div class="cue-step"><span class="cue-time">0:50</span> <span class="say">"At camera, scan Pass QR → bind to geometry. Identity is Pass, not biometrics."</span>
-        <div class="do">Mac: hold Pass QR to camera (auto-scans) or tap a face · PUBLIC flips to allow ≤1s. Pass chip shows "Linked to Camera".</div>
-      </div>
-      <div class="cue-step"><span class="cue-time">1:20</span> <span class="say">“Capture once. Rights travel with the media.”</span>
-        <div class="do">Mac: <strong>Capture clip</strong>.</div>
-      </div>
-      <div class="cue-step"><span class="cue-time">1:40</span> <span class="say">“Organizer changes promo policy — re-export is blocked or allowed with a receipt.”</span>
-        <div class="do">iPad: Deny promo → re-export · then Allow promo → re-export · show receipts / graph. Optional: <strong>Explain</strong> (Crusoe→OpenRouter), <strong>Consent brief</strong>, <strong>Judge panel</strong>.</div>
-      </div>
-      <div class="cue-step"><span class="cue-time">2:20</span> <span class="say">“Revoke and the live view goes deny — consent isn’t one-and-done.”</span>
-        <div class="do">iPad: <strong>Revoke impact</strong> preview · then Revoke · PUBLIC → deny. Anomaly strip flags revoked-with-clips.</div>
-      </div>
-      <div class="cue-step"><span class="cue-time">2:40</span> <span class="say">“Beachhead: conference / venue organizers. Capture Enforcement SDK + Media Rights Graph — Neo4j when available, memory fallback for the live demo.”</span>
-        <div class="do">One sentence ask: event pilot vs multi-venue rollout. Console chip shows Rights graph · Neo4j.</div>
-      </div>
-      <div class="cue-step"><span class="cue-time">3:10</span> <span class="say">“We built this with Fabric — an agentic engineering control plane.”</span>
-        <div class="do">Show FACTORY-BOOTSTRAP: impact → contracts → workers → Sentinel gates → READY_TO_MERGE.</div>
-      </div>
-      <div class="cue-step"><span class="cue-time">4:20</span> <span class="say">Close: “Policy layer for cameras + control plane for agents. Who wants a pilot?”</span></div>
     </div>
 
-    <div class="card stack">
-      <span class="section-label">Stack roles</span>
-      <h2>Neo4j · Crusoe · OpenRouter</h2>
-      <ul class="cue-list small">
-        <li><strong>Neo4j</strong> — Media Rights Graph (Person/Pass/Clip + CAPTURED/EXPORTED); memory fallback if down.</li>
-        <li><strong>Crusoe</strong> — primary LLM for Explain, Consent brief, Revoke impact narrative (fast flash model).</li>
-        <li><strong>OpenRouter</strong> — fallback if Crusoe fails; multi-model <strong>Judge panel</strong> in parallel.</li>
-      </ul>
+    <div class="qa-section">
+      <div class="card">
+        <div class="qa-toggle" onclick="toggleQA('prep')">
+          <h3>Setup · Before you start</h3>
+        </div>
+        <div class="qa-content" id="qa-prep">
+          <ol class="cue-list small">
+            <li>Mac Terminal: Veil server running · keep that window open</li>
+            <li>Console → <strong>Start clean demo</strong> (or Wipe everything)</li>
+            <li>Mac <code>/camera</code> · iPhone <code>/pass</code> · iPad <code>/console</code> · this tab <code>/cue</code></li>
+            <li>QR scanning is automatic when camera is live (or drag INTERNAL box onto your face)</li>
+          </ol>
+        </div>
+      </div>
     </div>
 
-    <div class="card stack">
-      <span class="section-label">Judge Q&A</span>
-      <h2>Common questions</h2>
-      <ul class="cue-list small">
-        <li><strong>"Is that face AI / biometric ID?"</strong> — No. Phone is the Pass (QR credential). Station enrolls Pass → face geometry (MediaPipe detection, not recognition). Unbound faces → public blur. Identity = Pass bind, not face database.</li>
-        <li><strong>"How do crowds work?"</strong> — Each person needs their own Pass (2nd phone or Console Issue). Camera auto-scans each QR → binds to best unbound face. One Pass per person.</li>
-        <li><strong>"What if they leave and come back?"</strong> — Face tracker (geometry) follows in-frame. Pass stays bound per-person for that session. Revoke Pass → instant deny for that person.</li>
-      </ul>
+    <div class="qa-section">
+      <div class="card">
+        <div class="qa-toggle" onclick="toggleQA('stack')">
+          <h3>Stack · Neo4j · Crusoe · OpenRouter</h3>
+        </div>
+        <div class="qa-content" id="qa-stack">
+          <ul class="cue-list small">
+            <li><strong>Neo4j</strong> — Media Rights Graph (Person/Pass/Clip + CAPTURED/EXPORTED); memory fallback if down.</li>
+            <li><strong>Crusoe</strong> — primary LLM for Explain, Consent brief, Revoke impact narrative (fast flash model).</li>
+            <li><strong>OpenRouter</strong> — fallback if Crusoe fails; multi-model <strong>Judge panel</strong> in parallel.</li>
+          </ul>
+        </div>
+      </div>
     </div>
 
-    <div id="fabric" class="card stack">
-      <span class="section-label">Fabric · 60s close</span>
-      <h2>Agentic engineering control plane</h2>
-      <div class="cue-step"><span class="cue-time">0:00</span> <span class="say">"Veil is the product. Fabric is how we ship multi-service change safely."</span></div>
-      <div class="cue-step"><span class="cue-time">0:10</span> <span class="say">"Agentic engineering control plane above coding agents — architecture + contracts + dynamic teams + deterministic gates. Not another IDE."</span></div>
-      <div class="cue-step"><span class="cue-time">0:20</span> <span class="say">"Forge orchestrates · Atlas impact · Pact contracts · Worker-* implement · Sentinel verifies — never implements."</span></div>
-      <div class="cue-step"><span class="cue-time">0:35</span> <span class="say">"Lifecycle: impact → contracts → scoped workers → Sentinel gates → READY_TO_MERGE. LLM narrative is never a gate result."</span></div>
-      <div class="cue-step"><span class="cue-time">0:50</span> <span class="say">"Proof: FACTORY-BOOTSTRAP-001 synthetic TypeScript estate (profile, notify, audit, sdk, gateway) — verification PASS, READY_TO_MERGE."</span></div>
-      <div class="cue-step"><span class="cue-time">0:58</span> <span class="say">"Policy layer for cameras + control plane for agents. Who wants a pilot?"</span></div>
+    <div class="qa-section">
+      <div class="card">
+        <div class="qa-toggle" onclick="toggleQA('veil-qa')">
+          <h3>Judge Q&A · Veil</h3>
+        </div>
+        <div class="qa-content" id="qa-veil-qa">
+          <ul class="cue-list small">
+            <li><strong>"Is that face AI / biometric ID?"</strong> — No. Phone is the Pass (QR credential). Station enrolls Pass → face geometry (MediaPipe detection, not recognition). Unbound faces → public blur. Identity = Pass bind, not face database.</li>
+            <li><strong>"How do crowds work?"</strong> — Each person needs their own Pass (2nd phone or Console Issue). Camera auto-scans each QR → binds to best unbound face. One Pass per person.</li>
+            <li><strong>"What if they leave and come back?"</strong> — Face tracker (geometry) follows in-frame. Pass stays bound per-person for that session. Revoke Pass → instant deny for that person.</li>
+          </ul>
+        </div>
+      </div>
     </div>
 
-    <div class="card stack">
-      <span class="section-label">Fabric Judge Q&A</span>
-      <h2>Anticipated questions</h2>
-      <ul class="cue-list small">
-        <li><strong>Why not just Cursor/Copilot?</strong> Cross-service orchestration + contracts + gates.</li>
-        <li><strong>Is Sentinel an LLM?</strong> No — deterministic validators.</li>
-        <li><strong>What's bootstrapped?</strong> FACTORY-BOOTSTRAP-001 + protocol V0.</li>
-      </ul>
+    <div class="qa-section">
+      <div class="card">
+        <div class="qa-toggle" onclick="toggleQA('fabric-qa')">
+          <h3>Judge Q&A · Fabric</h3>
+        </div>
+        <div class="qa-content" id="qa-fabric-qa">
+          <ul class="cue-list small">
+            <li><strong>Why not just Cursor/Copilot?</strong> Cross-service orchestration + contracts + gates.</li>
+            <li><strong>Is Sentinel an LLM?</strong> No — deterministic validators.</li>
+            <li><strong>What's bootstrapped?</strong> FACTORY-BOOTSTRAP-001 + protocol V0.</li>
+          </ul>
+        </div>
+      </div>
     </div>
 
-    <p class="small muted">LAN Pass/Console: use the IP printed in the Terminal window · Camera prefers <code>localhost</code>.</p>
+    <p class="small muted" style="margin-top: 2rem;">LAN Pass/Console: use the IP printed in the Terminal window · Camera prefers <code>localhost</code>.</p>
   </div>
+
+  <script>
+    const BEATS = [
+      {
+        block: 'VEIL',
+        target: '0:00',
+        targetSeconds: 0,
+        title: 'Problem · Cameras capture by default',
+        talk: [
+          'Cameras capture by default. Veil makes consent programmable.'
+        ],
+        action: 'Point at dual panes — INTERNAL clear, PUBLIC already blurring Unknown.'
+      },
+      {
+        block: 'VEIL',
+        target: '0:40',
+        targetSeconds: 40,
+        title: 'Pass · Consent credential',
+        talk: [
+          'Attendee issues a Veil Pass — a short-lived credential, not a face ID.'
+        ],
+        action: 'iPhone: Pass shows · tap Allow.'
+      },
+      {
+        block: 'VEIL',
+        target: '1:10',
+        targetSeconds: 70,
+        title: 'Camera bind · Scan QR or tap face',
+        talk: [
+          'At camera, scan Pass QR → bind to geometry.',
+          'Identity is Pass, not biometrics.'
+        ],
+        action: 'Hold Pass QR to camera (auto-scans) or tap a face · PUBLIC flips to allow ≤1s. Pass chip shows "Linked to Camera".'
+      },
+      {
+        block: 'VEIL',
+        target: '2:00',
+        targetSeconds: 120,
+        title: 'Capture · INTERNAL vs PUBLIC enforcement',
+        talk: [
+          'Capture once. Rights travel with the media.',
+          'INTERNAL shows all. PUBLIC enforces consent policies.'
+        ],
+        action: 'Mac: Capture clip. Note dual enforcement in real-time.'
+      },
+      {
+        block: 'VEIL',
+        target: '2:40',
+        targetSeconds: 160,
+        title: 'Console · Marketing policy control',
+        talk: [
+          'Organizer changes promo policy in Console.',
+          'Re-export is blocked or allowed with a receipt.'
+        ],
+        action: 'iPad: Deny promo → re-export (blocked) · then Allow promo → re-export (with receipt). Show receipts / graph. Optional: Explain (Crusoe→OpenRouter), Consent brief, Judge panel.'
+      },
+      {
+        block: 'VEIL',
+        target: '3:30',
+        targetSeconds: 210,
+        title: 'Revoke · Dynamic consent',
+        talk: [
+          'Revoke and the live view goes deny.',
+          'Consent isn\'t one-and-done — it\'s continuous.'
+        ],
+        action: 'iPad: Revoke impact preview · then Revoke · PUBLIC → deny. Anomaly strip flags revoked-with-clips.'
+      },
+      {
+        block: 'VEIL',
+        target: '4:00',
+        targetSeconds: 240,
+        title: 'Beachhead · Conference & venue organizers',
+        talk: [
+          'Capture Enforcement SDK + Media Rights Graph.',
+          'Neo4j when available, memory fallback for live demo.'
+        ],
+        action: 'One sentence ask: event pilot vs multi-venue rollout. Console chip shows Rights graph · Neo4j.'
+      },
+      {
+        block: 'FABRIC',
+        target: '4:00',
+        targetSeconds: 240,
+        title: 'Fabric · Agentic engineering control plane',
+        talk: [
+          'Veil is the product. Fabric is how we ship multi-service change safely.'
+        ],
+        action: null
+      },
+      {
+        block: 'FABRIC',
+        target: '4:10',
+        targetSeconds: 250,
+        title: 'Architecture · Not another IDE',
+        talk: [
+          'Agentic engineering control plane above coding agents.',
+          'Architecture + contracts + dynamic teams + deterministic gates.'
+        ],
+        action: null
+      },
+      {
+        block: 'FABRIC',
+        target: '4:20',
+        targetSeconds: 260,
+        title: 'Roles · Orchestration hierarchy',
+        talk: [
+          'Forge orchestrates · Atlas impact · Pact contracts · Worker-* implement.',
+          'Sentinel verifies — never implements.'
+        ],
+        action: null
+      },
+      {
+        block: 'FABRIC',
+        target: '4:35',
+        targetSeconds: 275,
+        title: 'Lifecycle · Gate-driven workflow',
+        talk: [
+          'Impact → contracts → scoped workers → Sentinel gates → READY_TO_MERGE.',
+          'LLM narrative is never a gate result.'
+        ],
+        action: null
+      },
+      {
+        block: 'FABRIC',
+        target: '4:50',
+        targetSeconds: 290,
+        title: 'Proof · FACTORY-BOOTSTRAP',
+        talk: [
+          'FACTORY-BOOTSTRAP-001 synthetic TypeScript estate (profile, notify, audit, sdk, gateway).',
+          'Verification PASS, READY_TO_MERGE. Policy layer for cameras + control plane for agents.'
+        ],
+        action: null
+      }
+    ];
+
+    let currentBeat = 0;
+    let timerInterval = null;
+    let elapsedSeconds = 0;
+    let timerRunning = false;
+
+    function formatTime(seconds) {
+      const mins = Math.floor(seconds / 60);
+      const secs = seconds % 60;
+      return `${mins}:${secs.toString().padStart(2, '0')}`;
+    }
+
+    function updateBeatDisplay() {
+      const beat = BEATS[currentBeat];
+      const beatCard = document.getElementById('beatCard');
+      const blockIndicator = document.getElementById('blockIndicator');
+      
+      beatCard.className = beat.block === 'FABRIC' ? 'beat-card fabric' : 'beat-card';
+      blockIndicator.className = beat.block === 'FABRIC' ? 'progress-block fabric' : 'progress-block';
+      blockIndicator.textContent = beat.block;
+      
+      document.getElementById('beatTarget').textContent = `TARGET ${beat.target}`;
+      document.getElementById('beatTitle').textContent = beat.title;
+      document.getElementById('beatProgress').textContent = `Beat ${currentBeat + 1} of ${BEATS.length}`;
+      
+      const talkHTML = beat.talk.map(line => 
+        `<div class="beat-talk-line">"${line}"</div>`
+      ).join('');
+      document.getElementById('beatTalk').innerHTML = talkHTML;
+      
+      const actionHTML = beat.action 
+        ? `<div class="beat-action">
+             <div class="beat-action-label">Do Now</div>
+             <div class="beat-action-text">${beat.action}</div>
+           </div>`
+        : '';
+      document.getElementById('beatAction').innerHTML = actionHTML;
+      
+      document.getElementById('prevBtn').disabled = currentBeat === 0;
+      document.getElementById('nextBtn').disabled = currentBeat === BEATS.length - 1;
+    }
+
+    function nextBeat() {
+      if (currentBeat < BEATS.length - 1) {
+        currentBeat++;
+        updateBeatDisplay();
+      }
+    }
+
+    function prevBeat() {
+      if (currentBeat > 0) {
+        currentBeat--;
+        updateBeatDisplay();
+      }
+    }
+
+    function startTimer() {
+      if (!timerRunning) {
+        timerRunning = true;
+        document.getElementById('timer').classList.add('running');
+        document.getElementById('startBtn').textContent = 'Pause';
+        document.getElementById('startBtn').className = 'btn warn';
+        
+        timerInterval = setInterval(() => {
+          elapsedSeconds++;
+          document.getElementById('timer').textContent = formatTime(elapsedSeconds);
+        }, 1000);
+      } else {
+        pauseTimer();
+      }
+    }
+
+    function pauseTimer() {
+      timerRunning = false;
+      clearInterval(timerInterval);
+      document.getElementById('timer').classList.remove('running');
+      document.getElementById('startBtn').textContent = 'Resume';
+      document.getElementById('startBtn').className = 'btn good';
+    }
+
+    function resetTimer() {
+      pauseTimer();
+      elapsedSeconds = 0;
+      currentBeat = 0;
+      document.getElementById('timer').textContent = formatTime(elapsedSeconds);
+      document.getElementById('startBtn').textContent = 'Start';
+      document.getElementById('startBtn').className = 'btn good';
+      updateBeatDisplay();
+    }
+
+    function toggleQA(section) {
+      const toggle = document.querySelector(`#qa-${section}`).previousElementSibling;
+      const content = document.getElementById(`qa-${section}`);
+      toggle.classList.toggle('open');
+      content.classList.toggle('open');
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+      
+      if (e.key === 'ArrowRight' || e.key === ' ') {
+        e.preventDefault();
+        nextBeat();
+      } else if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        prevBeat();
+      }
+    });
+
+    updateBeatDisplay();
+  </script>
 </body>
 </html>
