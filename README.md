@@ -16,15 +16,26 @@ Server prints Local + LAN URLs. Default port **8787**.
 
 ---
 
-## 60s script (hardened bind)
+## 60s script (Consent Station flow)
 
 1. **MacBook** `/camera` — camera or sample still; **Unknown** track; **PUBLIC** shows **blur**.
 2. **iPhone** `/pass` — Pass issues itself (token + Copy + QR). Tap **Allow**.
-3. **MacBook** → **Scan / bind latest Pass** (or open QR URL `…/camera?bind=<token_id>`). **PUBLIC** flips to **allow** within ~1s.
+3. **MacBook** → **Consent Station ON** → hold Pass QR to camera (scans and binds to best unbound face). OR **Bind latest Pass** (or open QR URL `…/camera?bind=<token_id>`). **PUBLIC** flips to **allow** within ~1s. Pass shows **"Linked to Camera"** chip.
 4. **MacBook** → **Capture clip**.
 5. **iPad** `/console` → **Latest clip** → **Deny promo → re-export** (blocked/transformed + receipt) → **Allow promo → re-export** (allowed). Optional: Pass **Revoke** → PUBLIC goes **deny** on next tick.
 
-Console **Issue Pass** sets the current bindable token. **Demo reset** clears tokens/clips/receipts; Camera re-seeds one Unknown.
+Console **Issue Pass** sets the current bindable token. **Demo reset** clears tokens/clips/receipts/bindings; Camera re-seeds one Unknown.
+
+### Consent Station mode
+
+Camera page now includes **Consent Station** toggle. When ON:
+- Scans live video for Pass QR codes (BarcodeDetector preferred; jsQR CDN fallback)
+- Parses `/camera?bind=<token_id>`, URL with `bind=`, or bare token_id
+- Binds valid active Pass to best unbound face (largest near center)
+- Debounces same token ~3s to avoid duplicate scans
+- Pass page polls `GET /api/pass/:id/binding` every ~2s and shows **"Linked to Camera"** vs **"Not linked"** chip
+- Station enrollment flow for crowds: each person scans their own Pass QR
+- Identity = Pass bind, NOT face biometrics (MediaPipe = geometry only; unbound faces → public blur)
 
 ---
 
@@ -57,6 +68,7 @@ HMAC secret: `VEIL_HMAC_SECRET` (demo default OK on LAN).
 ## API (quick)
 
 - `POST /api/pass/issue` · `GET /api/pass/latest` · `POST /api/pass/:id/public` · `POST /api/pass/:id/revoke`
+- `POST /api/bind` · `GET /api/pass/:id/binding` (Consent Station registry)
 - `POST /api/decide` · `POST /api/clips` · `POST /api/clips/:id/export` · `POST /api/clips/:id/policy-export`
 - `GET /api/receipts` · `GET /api/rights-graph` · `GET /api/neo4j/status` · `GET /api/ai/status` · `GET /api/crusoe/status` · `GET /api/openrouter/status`
 - `POST /api/ai/explain` · `POST /api/ai/consent-brief` · `POST /api/ai/revoke-impact` · `POST /api/ai/judge-panel` · `GET /api/ai/anomalies`
