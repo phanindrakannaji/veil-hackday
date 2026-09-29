@@ -34,7 +34,7 @@
         <li>Mac Terminal: Veil server running · keep that window open</li>
         <li>Console → <strong>Start clean demo</strong> (or Wipe everything)</li>
         <li>Mac <code>/camera</code> · iPhone <code>/pass</code> · iPad <code>/console</code> · this tab <code>/cue</code></li>
-        <li>Camera: <strong>Consent Station ON</strong> or drag INTERNAL box onto your face</li>
+        <li>Camera: QR scanning is automatic when camera is live (or drag INTERNAL box onto your face)</li>
       </ol>
     </div>
 
@@ -47,8 +47,8 @@
       <div class="cue-step"><span class="cue-time">0:30</span> <span class="say">“Attendee issues a Veil Pass — a short-lived credential, not a face ID.”</span>
         <div class="do">iPhone: Pass shows · tap <strong>Allow</strong>.</div>
       </div>
-      <div class="cue-step"><span class="cue-time">0:50</span> <span class="say">"At Consent Station, scan Pass QR → bind to geometry. Identity is Pass, not biometrics."</span>
-        <div class="do">Mac: <strong>Consent Station ON</strong> → hold Pass QR to camera OR <strong>Bind latest Pass</strong> · PUBLIC flips to allow ≤1s. Pass chip shows "Linked to Camera".</div>
+      <div class="cue-step"><span class="cue-time">0:50</span> <span class="say">"At camera, scan Pass QR → bind to geometry. Identity is Pass, not biometrics."</span>
+        <div class="do">Mac: hold Pass QR to camera (auto-scans) OR <strong>Bind latest Pass</strong> · PUBLIC flips to allow ≤1s. Pass chip shows "Linked to Camera".</div>
       </div>
       <div class="cue-step"><span class="cue-time">1:20</span> <span class="say">“Capture once. Rights travel with the media.”</span>
         <div class="do">Mac: <strong>Capture clip</strong>.</div>
@@ -83,7 +83,7 @@
       <h2>Common questions</h2>
       <ul class="cue-list small">
         <li><strong>"Is that face AI / biometric ID?"</strong> — No. Phone is the Pass (QR credential). Station enrolls Pass → face geometry (MediaPipe detection, not recognition). Unbound faces → public blur. Identity = Pass bind, not face database.</li>
-        <li><strong>"How do crowds work?"</strong> — Each person needs their own Pass (2nd phone or Console Issue). Consent Station scans each QR → binds to best unbound face. One Pass per person.</li>
+        <li><strong>"How do crowds work?"</strong> — Each person needs their own Pass (2nd phone or Console Issue). Camera auto-scans each QR → binds to best unbound face. One Pass per person.</li>
         <li><strong>"What if they leave and come back?"</strong> — Face tracker (geometry) follows in-frame. Pass stays bound per-person for that session. Revoke Pass → instant deny for that person.</li>
       </ul>
     </div>

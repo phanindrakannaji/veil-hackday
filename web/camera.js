@@ -61,7 +61,6 @@ document.getElementById("btnBindManual").onclick = bindManual;
 document.getElementById("btnCapture").onclick = captureClip;
 document.getElementById("btnJudge").onclick = () => runJudgeMode();
 document.getElementById("btnAutoTrack").onclick = toggleAutoTrack;
-document.getElementById("btnConsentStation").onclick = toggleConsentStation;
 
 function toggleAutoTrack() {
   autoTrack = !autoTrack;
@@ -74,22 +73,13 @@ function toggleAutoTrack() {
   if (autoTrack && stream) startFaceLoop();
 }
 
-function toggleConsentStation() {
-  consentStationMode = !consentStationMode;
-  const btn = document.getElementById("btnConsentStation");
+function startConsentStation() {
+  consentStationMode = true;
   const banner = document.getElementById("stationBanner");
-  btn.textContent = consentStationMode ? "Consent Station ON" : "Consent Station OFF";
-  btn.classList.toggle("good", consentStationMode);
-  if (consentStationMode) {
-    banner.classList.add("on");
-    banner.textContent = "Consent Station active — scanning for Pass QR…";
-    camStatus.textContent = "Consent Station ON — hold Pass QR to camera to bind best unbound face.";
-    startQRScanning();
-  } else {
-    banner.classList.remove("on");
-    stopQRScanning();
-    camStatus.textContent = "Consent Station OFF.";
-  }
+  banner.classList.add("on");
+  banner.textContent = "Consent Station active — scanning for Pass QR…";
+  camStatus.textContent = "QR scanning active — hold Pass QR at camera, or tap a face / Bind latest as backup.";
+  startQRScanning();
 }
 
 async function startQRScanning() {
@@ -205,6 +195,7 @@ async function startCamera({ manual = false } = {}) {
     degradeBanner.hidden = true;
     camStatus.textContent = "Camera live — loading face tracker…";
     startFaceLoop();
+    startConsentStation();
   } catch (err) {
     const msg = manual
       ? `Camera failed (${err.message}). Using sample still.`
@@ -215,6 +206,13 @@ async function startCamera({ manual = false } = {}) {
 
 function useFallback(statusMsg) {
   stopFaceLoop();
+  stopQRScanning();
+  consentStationMode = false;
+  const banner = document.getElementById("stationBanner");
+  if (banner) {
+    banner.classList.remove("on");
+    banner.textContent = "Consent Station idle";
+  }
   if (stream) {
     stream.getTracks().forEach((t) => t.stop());
     stream = null;
@@ -497,8 +495,8 @@ function updateChrome() {
   setStep(3, bound ? "active" : "");
   setStep(4, "");
   if (camHint) {
-    if (!hasFaces) camHint.textContent = "Point the camera at people — faces get boxes automatically.";
-    else if (!bound) camHint.textContent = "Tap a face to bind. Crowd: each person needs their own Pass (2nd phone or Issue).";
+    if (!hasFaces) camHint.textContent = "Point the camera at people — faces get boxes automatically. Show Pass QR for instant bind.";
+    else if (!bound) camHint.textContent = "Show Pass QR at camera — or tap a face / Bind latest as backup.";
     else camHint.textContent = "PUBLIC should match Pass policy. Capture when ready, then use Console.";
   }
 }
